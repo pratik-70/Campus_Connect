@@ -43,16 +43,15 @@ function App() {
       </header>
 
       <main className="relative z-10 mx-auto mt-12 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
-        <section className="animate-fadeUp rounded-3xl border border-[#8ab6ff2f] bg-[#0b1a3e73] px-6 py-12 shadow-[0_24px_60px_rgba(3,8,24,0.42)] md:px-12 md:py-16">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#76f3d8]">Campus Connect Platform</p>
-          <h1 className="mt-5 max-w-[18ch] font-display text-4xl font-bold leading-[1.05] text-[#f3f8ff] md:text-6xl lg:text-7xl">
+        <section className="animate-fadeUp rounded-3xl border border-[#8ab6ff2f] bg-[#0b1a3e73] px-6 py-12 text-center shadow-[0_24px_60px_rgba(3,8,24,0.42)] md:px-12 md:py-16">
+          <h1 className="mx-auto mt-5 max-w-[18ch] font-display text-4xl font-bold leading-[1.05] text-[#f3f8ff] md:text-6xl lg:text-7xl">
             Discover, Engage, Belong
           </h1>
-          <p className="mt-6 max-w-[62ch] text-base leading-8 text-[#b8c9ea] md:text-lg">
+          <p className="mx-auto mt-6 max-w-[62ch] text-base leading-8 text-[#b8c9ea] md:text-lg">
             One professional platform for students and organizers to discover events, register quickly, and build meaningful campus experiences.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <a
               href="signup.html"
               className="rounded-xl bg-[linear-gradient(135deg,#2ad7ae,#55ebcc)] px-6 py-3 text-sm font-semibold text-[#082922] transition hover:-translate-y-0.5 hover:brightness-105"
@@ -68,7 +67,7 @@ function App() {
           </div>
         </section>
 
-        <section id="events" className="mt-14">
+        <section id="events" className="mt-14 text-center">
           <div className="mb-7">
             <h2 className="font-display text-3xl font-bold text-[#ecf4ff] md:text-4xl">Why Campus Connect</h2>
             <p className="mt-2 text-[#a9bbde]">Everything needed to run and join events in one place.</p>
@@ -76,7 +75,7 @@ function App() {
 
           <div className="grid gap-5 md:grid-cols-3">
             {highlights.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-[#8ab6ff26] bg-[#0d1b3d8c] p-6">
+              <article key={item.title} className="rounded-2xl border border-[#8ab6ff26] bg-[#0d1b3d8c] p-6 text-center">
                 <h3 className="font-display text-xl font-semibold text-[#f6faff]">{item.title}</h3>
                 <p className="mt-3 leading-7 text-[#a9bbde]">{item.text}</p>
               </article>
@@ -84,7 +83,7 @@ function App() {
           </div>
         </section>
 
-        <section id="about" className="mt-14 grid gap-6 rounded-3xl border border-[#8ab6ff26] bg-[#0b173672] p-7 md:grid-cols-2 md:p-10">
+        <section id="about" className="mt-14 grid gap-6 rounded-3xl border border-[#8ab6ff26] bg-[#0b173672] p-7 text-center md:grid-cols-2 md:p-10">
           <div>
             <h2 className="font-display text-3xl font-bold text-[#ecf4ff]">Built for modern campuses</h2>
             <p className="mt-4 leading-8 text-[#a9bbde]">
@@ -107,18 +106,18 @@ function App() {
           </div>
         </section>
 
-        <section id="contact" className="mt-14 rounded-3xl border border-[#8ab6ff24] bg-[#0a173772] p-7 md:p-10">
+        <section id="contact" className="mt-14 rounded-3xl border border-[#8ab6ff24] bg-[#0a173772] p-7 text-center md:p-10">
           <h2 className="font-display text-3xl font-bold text-[#ecf4ff]">Contact</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4">
+            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4 text-center">
               <p className="text-sm uppercase tracking-[0.12em] text-[#6df4d2]">Email</p>
               <a href="mailto:support@campusconnect.com" className="mt-2 block text-[#dce8ff] hover:text-[#34e5be]">support@campusconnect.com</a>
             </div>
-            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4">
+            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4 text-center">
               <p className="text-sm uppercase tracking-[0.12em] text-[#6df4d2]">Phone</p>
               <a href="tel:+911234567890" className="mt-2 block text-[#dce8ff] hover:text-[#34e5be]">+91 12345 67890</a>
             </div>
-            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4">
+            <div className="rounded-xl border border-[#8ab6ff24] bg-[#0f1f4691] p-4 text-center">
               <p className="text-sm uppercase tracking-[0.12em] text-[#6df4d2]">Hours</p>
               <p className="mt-2 text-[#dce8ff]">Mon - Fri, 9:00 AM - 6:00 PM</p>
             </div>
@@ -126,7 +125,7 @@ function App() {
         </section>
       </main>
 
-      <footer className="relative z-10 mx-auto w-[calc(100%-1rem)] max-w-[1200px] border-t border-[#8bb5ff2d] pb-8 pt-10 text-sm text-[#9db0d8] md:w-[calc(100%-2rem)]">
+      <footer className="relative z-10 mx-auto w-[calc(100%-1rem)] max-w-[1200px] border-t border-[#8bb5ff2d] pb-8 pt-10 text-center text-sm text-[#9db0d8] md:w-[calc(100%-2rem)]">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h3 className="font-display text-xl font-semibold text-[#eaf2ff]">Campus Connect</h3>
