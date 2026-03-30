@@ -15,8 +15,8 @@ function App() {
       />
 
       <header className="relative z-10 mx-auto flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between pt-4 md:w-[calc(100%-2rem)] md:pt-8">
-        <a href="index.html" aria-label="Campus Connect Home" className="inline-flex">
-          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-28 w-auto md:h-32" />
+        <a href="index.html" aria-label="Campus Connect Home" className="-ml-4 inline-flex md:-ml-6">
+          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-28 w-auto rounded-md md:h-32" />
         </a>
 
         <div className="flex items-center gap-2 md:gap-3">
