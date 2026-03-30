@@ -28,13 +28,12 @@ function App() {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 [background-image:linear-gradient(rgba(202,218,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(202,218,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]"
       />
-
       <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between px-4 py-3 md:mt-6 md:w-[calc(100%-2rem)] md:px-6">
         <a href="index.html" aria-label="Campus Connect Home" className="-ml-4 inline-flex md:-ml-6">
           <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-28 w-auto rounded-md md:h-32" />
         </a>
 
-        <nav className="hidden items-center gap-8 text-sm font-semibold text-[#cddcff] lg:flex">
+        <nav className="hidden items-center gap-8 text-base font-bold text-[#eef5ff] lg:flex">
           <a href="index.html" className="transition hover:text-[#34e5be]">Home</a>
           <a href="#events" className="transition hover:text-[#34e5be]">Events</a>
           <a href="#about" className="transition hover:text-[#34e5be]">About</a>
@@ -44,10 +43,10 @@ function App() {
 
       <main className="relative z-10 mx-auto mt-12 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
         <section className="animate-fadeUp rounded-3xl border border-[#8ab6ff2f] bg-[#0b1a3e73] px-6 py-12 text-center shadow-[0_24px_60px_rgba(3,8,24,0.42)] md:px-12 md:py-16">
-          <h1 className="mx-auto mt-5 max-w-[18ch] font-display text-4xl font-bold leading-[1.05] text-[#f3f8ff] md:text-6xl lg:text-7xl">
+          <h1 className="mx-auto mt-5 max-w-[18ch] font-display text-5xl font-extrabold leading-[1.05] text-[#f8fbff] md:text-7xl lg:text-8xl">
             Discover, Engage, Belong
           </h1>
-          <p className="mx-auto mt-6 max-w-[62ch] text-base leading-8 text-[#b8c9ea] md:text-lg">
+          <p className="mx-auto mt-6 max-w-[62ch] text-base font-medium leading-8 text-[#d0dcf3] md:text-lg">
             One professional platform for students and organizers to discover events, register quickly, and build meaningful campus experiences.
           </p>
 
@@ -125,18 +124,18 @@ function App() {
         </section>
       </main>
 
-      <footer className="relative z-10 mx-auto w-[calc(100%-1rem)] max-w-[1200px] border-t border-[#8bb5ff2d] pb-8 pt-10 text-center text-sm text-[#9db0d8] md:w-[calc(100%-2rem)]">
-        <div className="grid gap-8 md:grid-cols-3">
+      <footer className="relative z-10 mx-auto mt-16 w-[calc(100%-1rem)] max-w-[1200px] rounded-3xl border border-[#8bb5ff2d] bg-[#0a173b75] px-6 pb-8 pt-10 text-sm text-[#9db0d8] md:w-[calc(100%-2rem)] md:px-10">
+        <div className="grid gap-10 text-center md:grid-cols-[1.2fr_0.9fr_0.9fr] md:text-left">
           <div>
-            <h3 className="font-display text-xl font-semibold text-[#eaf2ff]">Campus Connect</h3>
-            <p className="mt-3 max-w-[36ch] leading-7 text-[#a9bbde]">
+            <h3 className="font-display text-2xl font-semibold text-[#f2f8ff]">Campus Connect</h3>
+            <p className="mx-auto mt-4 max-w-[36ch] leading-7 text-[#b3c5e6] md:mx-0">
               Building a connected campus where students discover events, join communities, and grow together.
             </p>
           </div>
 
           <div>
-            <h4 className="font-display text-base font-semibold text-[#eaf2ff]">Quick Links</h4>
-            <ul className="mt-3 space-y-2">
+            <h4 className="font-display text-xl font-semibold text-[#f2f8ff]">Quick Links</h4>
+            <ul className="mt-4 space-y-2.5 text-base">
               <li><a href="index.html" className="transition hover:text-[#34e5be]">Home</a></li>
               <li><a href="#events" className="transition hover:text-[#34e5be]">Events</a></li>
               <li><a href="#about" className="transition hover:text-[#34e5be]">About</a></li>
@@ -145,8 +144,8 @@ function App() {
           </div>
 
           <div>
-            <h4 className="font-display text-base font-semibold text-[#eaf2ff]">Get in Touch</h4>
-            <ul className="mt-3 space-y-2">
+            <h4 className="font-display text-xl font-semibold text-[#f2f8ff]">Get in Touch</h4>
+            <ul className="mt-4 space-y-2.5 text-base">
               <li><a href="mailto:support@campusconnect.com" className="transition hover:text-[#34e5be]">support@campusconnect.com</a></li>
               <li><a href="tel:+911234567890" className="transition hover:text-[#34e5be]">+91 12345 67890</a></li>
               <li>Mon - Fri | 9:00 AM - 6:00 PM</li>
