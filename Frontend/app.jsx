@@ -1,24 +1,4 @@
-const { useMemo } = React;
-
 function App() {
-  const insights = useMemo(
-    () => [
-      {
-        title: "Unified Discovery Layer",
-        text: "Search, filter, and discover all campus events from one intelligent feed."
-      },
-      {
-        title: "Live Registration Intelligence",
-        text: "Instant seat visibility, waitlist movement, and reminder automation."
-      },
-      {
-        title: "Complete Event Lifecycle",
-        text: "From registration to QR tickets and certificates, every step is digital."
-      }
-    ],
-    []
-  );
-
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(130deg,#070d20,#0f1c3a)]">
       <div
@@ -55,31 +35,16 @@ function App() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto mt-12 w-[calc(100%-1rem)] max-w-[1080px] pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
-        <section className="animate-fadeUp">
-          <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#71f3d5]">Campus Connect Insight</p>
-          <h1 className="mt-6 max-w-[20ch] font-display text-4xl font-bold leading-[1.08] md:text-6xl lg:text-7xl">
-            Campus events, redesigned as a premium digital experience.
+      <main className="relative z-10 mx-auto mt-12 flex min-h-[44vh] w-[calc(100%-1rem)] max-w-[1080px] items-center justify-center pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
+        <section className="animate-fadeUp text-center">
+          {/* <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#71f3d5]">Campus Connect Insight</p> */}
+          <h1 className="mx-auto mt-6 max-w-[20ch] font-display text-4xl font-bold leading-[1.08] md:text-6xl lg:text-7xl">
+            Your Campus, Your Network
           </h1>
-
-          <div className="mt-12 space-y-7">
-            {insights.map((item, index) => (
-              <article key={item.title} className="opacity-0 animate-riseSoft" style={{ animationDelay: `${130 * index}ms` }}>
-                <div className="flex items-start gap-3">
-                  <span className="mt-2 h-2.5 w-2.5 rounded-full bg-[#27d1a6] shadow-[0_0_12px_rgba(39,209,166,0.9)]" />
-                  <div>
-                    <h2 className="font-display text-xl font-semibold text-[#f6faff]">{item.title}</h2>
-                    <p className="mt-2 max-w-[62ch] text-base leading-7 text-[#a9bbde]">{item.text}</p>
-                  </div>
-                </div>
-                <div className="mt-5 h-px w-full bg-gradient-to-r from-[#8bb5ff44] via-[#8bb5ff1f] to-transparent" />
-              </article>
-            ))}
-          </div>
         </section>
       </main>
 
-      <footer className="relative z-10 mx-auto w-[calc(100%-1rem)] max-w-[1080px] border-t border-[#8bb5ff2d] pb-8 pt-6 text-sm text-[#9db0d8] md:w-[calc(100%-2rem)]">
+      <footer className="relative z-10 mx-auto w-[calc(100%-1rem)] max-w-[1080px] border-t border-[#8bb5ff2d] pb-8 pt-6 text-center text-sm text-[#9db0d8] md:w-[calc(100%-2rem)]">
         <p>&copy; {new Date().getFullYear()} Campus Connect. All rights reserved.</p>
       </footer>
     </div>
