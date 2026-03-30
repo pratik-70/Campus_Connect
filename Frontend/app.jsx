@@ -29,9 +29,9 @@ function App() {
         className="pointer-events-none fixed inset-0 [background-image:linear-gradient(rgba(202,218,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(202,218,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]"
       />
 
-      <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between rounded-2xl border border-[#b9cbf533] bg-[#0a17367d] px-4 py-3 backdrop-blur-md md:mt-6 md:w-[calc(100%-2rem)] md:px-6">
+      <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between px-4 py-3 md:mt-6 md:w-[calc(100%-2rem)] md:px-6">
         <a href="index.html" aria-label="Campus Connect Home" className="-ml-4 inline-flex md:-ml-6">
-          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-20 w-auto rounded-md md:h-24" />
+          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-28 w-auto rounded-md md:h-32" />
         </a>
 
         <nav className="hidden items-center gap-8 text-sm font-semibold text-[#cddcff] lg:flex">
@@ -40,28 +40,13 @@ function App() {
           <a href="#about" className="transition hover:text-[#34e5be]">About</a>
           <a href="#contact" className="transition hover:text-[#34e5be]">Contact</a>
         </nav>
-
-        <div className="flex items-center gap-2 md:gap-3">
-          <a
-            href="signin.html"
-            className="rounded-xl border border-[#cdddff4d] bg-[#0d1b3a99] px-4 py-2 text-sm font-semibold text-[#d9e6ff] transition hover:-translate-y-0.5 hover:border-[#ffc34d88] hover:text-[#ffc34d]"
-          >
-            Sign in
-          </a>
-          <a
-            href="signup.html"
-            className="rounded-xl bg-[linear-gradient(135deg,#27d1a6,#34e5be)] px-4 py-2 text-sm font-semibold text-[#052a22] transition hover:-translate-y-0.5 hover:brightness-105"
-          >
-            Sign up
-          </a>
-        </div>
       </header>
 
       <main className="relative z-10 mx-auto mt-12 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
         <section className="animate-fadeUp rounded-3xl border border-[#8ab6ff2f] bg-[#0b1a3e73] px-6 py-12 shadow-[0_24px_60px_rgba(3,8,24,0.42)] md:px-12 md:py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#76f3d8]">Campus Connect Platform</p>
           <h1 className="mt-5 max-w-[18ch] font-display text-4xl font-bold leading-[1.05] text-[#f3f8ff] md:text-6xl lg:text-7xl">
-            Discover, engage, and grow with your campus community.
+            Discover, Engage, Belong
           </h1>
           <p className="mt-6 max-w-[62ch] text-base leading-8 text-[#b8c9ea] md:text-lg">
             One professional platform for students and organizers to discover events, register quickly, and build meaningful campus experiences.
