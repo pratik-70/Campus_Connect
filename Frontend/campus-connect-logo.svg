@@ -1,8 +1,8 @@
 <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="connectGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#0891B2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
     </linearGradient>
 
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -30,7 +30,7 @@
 
   <g transform="translate(140, 110)">
         <text x="0" y="0" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-          font-weight="700" font-size="42" fill="#E8F2FF">
+          font-weight="700" font-size="42" fill="#1E3A8A">
       CAMPUS
     </text>
 
