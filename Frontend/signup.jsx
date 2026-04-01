@@ -354,8 +354,8 @@ function SignupPage() {
       : "text-[#9fb4dd]";
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(125deg,#050a1a,#0c1a3a)] p-3 md:p-6">
-      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#ffffff1f] shadow-[0_35px_65px_rgba(5,10,24,0.6)] lg:grid-cols-2">
+    <div className="min-h-screen bg-[linear-gradient(140deg,#fbfdff,#e9f3ff)] p-3 md:p-6">
+      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#cfdeeb] shadow-[0_22px_52px_rgba(26,49,74,0.12)] lg:grid-cols-2">
         <section className="relative">
           <img
             src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1400&q=80"
@@ -372,13 +372,13 @@ function SignupPage() {
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,#0d1b3d,#08142d)] p-5 md:p-8">
+        <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,#ffffff,#f5faff)] p-5 md:p-8">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="font-display text-xl font-semibold">Sign up</p>
-              <p className="text-sm text-[#9fb4dd]">Step {step} of {totalSteps}: {stepTitles[step - 1]}</p>
+              <p className="font-display text-xl font-semibold text-[#1a2a3d]">Sign up</p>
+              <p className="text-sm text-[#5f748a]">Step {step} of {totalSteps}: {stepTitles[step - 1]}</p>
             </div>
-            <a href="index.html" className="text-sm text-[#76f4d5] underline underline-offset-4">Home</a>
+            <a href="index.html" className="text-sm text-[#0e8f84] underline underline-offset-4 hover:text-[#0d7a72]">Home</a>
           </div>
 
           <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-[#22355f]">
@@ -392,7 +392,7 @@ function SignupPage() {
             <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             {step === 1 && (
               <div className="space-y-3">
-                <p className="text-sm text-[#c5d6fa]">Choose how you want to use Campus Connect.</p>
+                  <p className="text-sm text-[#50647d]">Choose how you want to use Campus Connect.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     {
@@ -412,8 +412,8 @@ function SignupPage() {
                       onClick={() => setFormData((prev) => ({ ...prev, accountType: item.label }))}
                       className={`rounded-2xl border p-4 text-left transition ${
                         formData.accountType === item.label
-                          ? "border-[#27d1a6] bg-[#123a4388]"
-                          : "border-[#bed2ff3d] bg-[#040b1c95] hover:border-[#7ec9b6]"
+                          ? "border-[#0ea596] bg-[#e8f7f4]"
+                          : "border-[#d2dfeb] bg-[#ffffff] hover:border-[#bee7df]"
                       }`}
                     >
                       <img
@@ -421,8 +421,8 @@ function SignupPage() {
                         alt={`${item.label} role preview`}
                         className="mb-3 h-24 w-full rounded-xl object-cover"
                       />
-                      <p className="font-display text-lg text-[#f3f7ff]">{item.label}</p>
-                      <p className="mt-1 text-xs text-[#9fb4dd]">{item.text}</p>
+                      <p className="font-display text-lg text-[#1a2a3d]">{item.label}</p>
+                      <p className="mt-1 text-xs text-[#5f748a]">{item.text}</p>
                     </button>
                   ))}
                 </div>
@@ -432,10 +432,10 @@ function SignupPage() {
             {step === 2 && (
               <div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <label className="text-sm text-[#dfe9ff]">
+                    <label className="text-sm text-[#24344a]">
                     First name
-                    <input
-                      className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                      <input
+                        className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                       type="text"
                       name="firstName"
                       value={formData.firstName}
@@ -443,10 +443,10 @@ function SignupPage() {
                       placeholder="Aarav"
                     />
                   </label>
-                  <label className="text-sm text-[#dfe9ff]">
+                    <label className="text-sm text-[#24344a]">
                     Last name
-                    <input
-                      className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                      <input
+                        className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                       type="text"
                       name="lastName"
                       value={formData.lastName}
@@ -456,10 +456,10 @@ function SignupPage() {
                   </label>
                 </div>
 
-                <label className="mt-3 block text-sm text-[#dfe9ff]">
+                  <label className="mt-3 block text-sm text-[#24344a]">
                   University registration ID
-                  <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    <input
+                      className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="text"
                     name="regNo"
                     value={formData.regNo}
@@ -469,25 +469,25 @@ function SignupPage() {
                 </label>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <label className="text-sm text-[#dfe9ff]">
+                    <label className="text-sm text-[#24344a]">
                     Department
-                    <select
-                      className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                      <select
+                        className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                       name="department"
                       value={formData.department}
                       onChange={handleInput}
                     >
-                      <option value="">Select department</option>
+                        <option value="" className="text-[#1a2a3d]">Select department</option>
                       {departments.map((department) => (
-                        <option key={department} value={department} className="text-[#0d1631]">{department}</option>
+                          <option key={department} value={department} className="text-[#1a2a3d]">{department}</option>
                       ))}
                     </select>
                   </label>
 
-                  <label className="text-sm text-[#dfe9ff]">
+                    <label className="text-sm text-[#24344a]">
                     {formData.accountType === "Student" ? "Program" : "Organizing Unit"}
-                    <input
-                      className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                      <input
+                        className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                       type="text"
                       name="programOrUnit"
                       value={formData.programOrUnit}
@@ -497,10 +497,10 @@ function SignupPage() {
                   </label>
                 </div>
 
-                <label className="mt-3 block text-sm text-[#dfe9ff]">
+                  <label className="mt-3 block text-sm text-[#24344a]">
                   {formData.accountType === "Student" ? "Year / Semester" : "Designation"}
                   <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="text"
                     name="yearOrDesignation"
                     value={formData.yearOrDesignation}
@@ -513,10 +513,10 @@ function SignupPage() {
 
             {step === 3 && (
               <div>
-                <label className="block text-sm text-[#dfe9ff]">
+                <label className="block text-sm text-[#24344a]">
                   Official email
                   <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="email"
                     name="email"
                     value={formData.email}
@@ -525,10 +525,10 @@ function SignupPage() {
                   />
                 </label>
 
-                <label className="mt-3 block text-sm text-[#dfe9ff]">
+                <label className="mt-3 block text-sm text-[#24344a]">
                   Password
                   <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="password"
                     name="password"
                     value={formData.password}
@@ -537,10 +537,10 @@ function SignupPage() {
                   />
                 </label>
 
-                <label className="mt-3 block text-sm text-[#dfe9ff]">
+                <label className="mt-3 block text-sm text-[#24344a]">
                   Confirm password
                   <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="password"
                     name="confirmPassword"
                     value={formData.confirmPassword}
@@ -557,15 +557,15 @@ function SignupPage() {
                     onChange={handleInput}
                     className="mt-1 h-4 w-4"
                   />
-                  <span>I agree to the Terms and Privacy Policy.</span>
+                  <span className="text-[#5f748a]">I agree to the Terms and Privacy Policy.</span>
                 </label>
               </div>
             )}
 
             {step === 4 && (
               <div className="space-y-4">
-                <p className="text-sm text-[#c5d6fa]">
-                  Verify your email <span className="font-semibold text-white">{formData.email || "(not set)"}</span>
+                <p className="text-sm text-[#50647d]">
+                  Verify your email <span className="font-semibold text-[#1a2a3d]">{formData.email || "(not set)"}</span>
                 </p>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -573,7 +573,7 @@ function SignupPage() {
                     type="button"
                     onClick={sendVerificationCode}
                     disabled={isBusy}
-                    className="rounded-xl border border-[#76f4d57d] bg-[#123a4388] px-4 py-3 text-sm font-semibold text-[#7ef3d7] transition hover:brightness-110 sm:min-w-[190px]"
+                    className="rounded-xl border border-[#bee7df] bg-[#e8f7f4] px-4 py-3 text-sm font-semibold text-[#0e8f84] transition hover:bg-[#d4ede8] sm:min-w-[190px]"
                   >
                     {isBusy ? "Sending..." : isCodeSent ? "Resend Code" : "Send Verification Code"}
                   </button>
@@ -590,7 +590,7 @@ function SignupPage() {
                       value={digit}
                       onChange={(event) => handleOtpChange(index, event.target.value)}
                       onKeyDown={(event) => handleOtpKeyDown(index, event)}
-                      className="h-12 w-11 rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] text-center text-lg font-semibold text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                      className="h-12 w-11 rounded-xl border border-[#d2dfeb] bg-[#ffffff] text-center text-lg font-semibold text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                       aria-label={`OTP digit ${index + 1}`}
                     />
                   ))}
@@ -600,12 +600,12 @@ function SignupPage() {
                   type="button"
                   onClick={verifyCode}
                   disabled={isBusy}
-                  className="rounded-xl bg-[linear-gradient(135deg,#27d1a6,#34e5be)] px-4 py-3 font-semibold text-[#052a22] transition hover:brightness-105 sm:min-w-[180px]"
+                  className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 sm:min-w-[180px]"
                 >
                   {isBusy ? "Verifying..." : "Verify Email"}
                 </button>
 
-                <p className={`text-sm ${isEmailVerified ? "text-[#66f0cb]" : "text-[#9fb4dd]"}`}>
+                <p className={`text-sm ${isEmailVerified ? "text-[#16a084]" : "text-[#5f748a]"}`}>
                   {isEmailVerified ? "Email has been verified." : "Email not verified yet."}
                 </p>
               </div>
@@ -613,10 +613,10 @@ function SignupPage() {
 
             {step === 5 && (
               <div>
-                <label className="block text-sm text-[#dfe9ff]">
+                <label className="block text-sm text-[#24344a]">
                   Choose a unique username
                   <input
-                    className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="text"
                     name="username"
                     value={formData.username}
@@ -625,19 +625,19 @@ function SignupPage() {
                   />
                 </label>
 
-                <p className="mt-2 text-xs text-[#9fb4dd]">
+                <p className="mt-2 text-xs text-[#5f748a]">
                   Use 4-16 characters with lowercase letters, numbers, or underscore.
                 </p>
               </div>
             )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#2a3f6d] pt-4">
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#cfdeeb] pt-4">
               <button
                 type="button"
                 onClick={goBack}
                 disabled={step === 1 || isBusy}
-                className="rounded-xl border border-[#bed2ff3d] px-4 py-3 text-sm font-semibold text-[#dfe9ff] transition disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-4 py-3 text-sm font-semibold text-[#1a2a3d] transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-[#f5faff]"
               >
                 Back
               </button>
@@ -647,7 +647,7 @@ function SignupPage() {
                   type="button"
                   onClick={goNext}
                   disabled={isBusy}
-                  className="rounded-xl bg-[linear-gradient(135deg,#27d1a6,#34e5be)] px-4 py-3 text-sm font-semibold text-[#052a22] transition hover:brightness-105"
+                  className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
                 >
                   {isBusy ? "Please wait..." : "Next Step"}
                 </button>
@@ -655,17 +655,23 @@ function SignupPage() {
                 <button
                   type="submit"
                   disabled={isBusy}
-                  className="rounded-xl bg-[linear-gradient(135deg,#27d1a6,#34e5be)] px-4 py-3 text-sm font-semibold text-[#052a22] transition hover:brightness-105"
+                  className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
                 >
                   {isBusy ? "Creating Account..." : "Complete Signup"}
                 </button>
               )}
             </div>
 
-            <p className={`mt-3 min-h-[1.25rem] text-sm ${messageColor}`}>{message.text}</p>
+            <p className={`mt-3 min-h-[1.25rem] text-sm ${
+              message.type === "error"
+                ? "text-[#d64a5e]"
+                : message.type === "success"
+                ? "text-[#16a084]"
+                : "text-[#5f748a]"
+            }`}>{message.text}</p>
 
-            <p className="mt-2 pb-1 text-sm text-[#9fb4dd]">
-              Already have an account? <a href="signin.html" className="text-[#76f4d5] underline underline-offset-4">Sign in</a>
+            <p className="mt-2 pb-1 text-sm text-[#5f748a]">
+              Already have an account? <a href="signin.html" className="text-[#0e8f84] underline underline-offset-4 hover:text-[#0d7a72]">Sign in</a>
             </p>
           </form>
         </section>
