@@ -61,8 +61,8 @@ function SigninPage() {
       : "text-[#9fb4dd]";
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(125deg,#050a1a,#0c1a3a)] p-3 md:p-6">
-      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1100px] overflow-hidden rounded-[2rem] border border-[#ffffff1f] shadow-[0_35px_65px_rgba(5,10,24,0.6)] lg:grid-cols-2">
+    <div className="min-h-screen bg-[linear-gradient(140deg,#fbfdff,#e9f3ff)] p-3 md:p-6">
+      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1100px] overflow-hidden rounded-[2rem] border border-[#cfdeeb] shadow-[0_22px_52px_rgba(26,49,74,0.12)] lg:grid-cols-2">
         <section className="relative">
           <img
             src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1300&q=80"
@@ -80,20 +80,21 @@ function SigninPage() {
         </section>
 
         <section className="flex items-center bg-[linear-gradient(180deg,#0d1b3d,#08142d)] p-5 md:p-8">
+      <section className="flex items-center bg-[linear-gradient(180deg,#ffffff,#f5faff)] p-5 md:p-8">
           <div className="w-full animate-fadeUp">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="font-display text-xl font-semibold">Sign in</p>
-                <p className="text-sm text-[#9fb4dd]">Access your account</p>
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="font-display text-xl font-semibold text-[#1a2a3d]">Sign in</p>
+                  <p className="text-sm text-[#5f748a]">Access your account</p>
               </div>
-              <a href="index.html" className="text-sm text-[#76f4d5] underline underline-offset-4">Home</a>
+                <a href="index.html" className="text-sm text-[#0e8f84] underline underline-offset-4 hover:text-[#0d7a72]">Home</a>
             </div>
 
             <form onSubmit={handleSubmit} noValidate>
-              <label className="block text-sm text-[#dfe9ff]">
+                <label className="block text-sm text-[#24344a]">
                 Official email
-                <input
-                  className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                  <input
+                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -105,7 +106,7 @@ function SigninPage() {
               <label className="mt-3 block text-sm text-[#dfe9ff]">
                 Password
                 <input
-                  className="mt-2 w-full rounded-xl border border-[#bed2ff3d] bg-[#040b1c95] px-3 py-3 text-[#f3f7ff] outline-none transition focus:border-[#27d1a6]"
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                   type="password"
                   name="password"
                   value={formData.password}
@@ -113,19 +114,26 @@ function SigninPage() {
                   placeholder="Enter your password"
                 />
               </label>
+              <label className="text-sm text-[#24344a]">
 
               <button
                 type="submit"
                 disabled={isBusy}
-                className="mt-4 w-full rounded-xl border border-[#ffc34d59] bg-[#ffc34d14] px-4 py-3 font-semibold text-[#ffc34d] transition hover:brightness-105"
+                className="mt-4 w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
               >
                 {isBusy ? "Signing in..." : "Sign In"}
               </button>
 
-              <p className={`mt-3 min-h-[1.25rem] text-sm ${messageColor}`}>{message.text}</p>
+              <p className={`mt-3 min-h-[1.25rem] text-sm ${
+                message.type === "error"
+                  ? "text-[#d64a5e]"
+                  : message.type === "success"
+                  ? "text-[#16a084]"
+                  : "text-[#5f748a]"
+              }`}>{message.text}</p>
 
-              <p className="mt-2 text-sm text-[#9fb4dd]">
-                New here? <a href="signup.html" className="text-[#76f4d5] underline underline-offset-4">Create account</a>
+              <p className="mt-2 text-sm text-[#5f748a]">
+                New here? <a href="signup.html" className="text-[#0e8f84] underline underline-offset-4 hover:text-[#0d7a72]">Create account</a>
               </p>
             </form>
           </div>
