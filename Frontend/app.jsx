@@ -83,11 +83,6 @@ function App() {
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full border-[26px] border-[#7de4d433]" />
           <div aria-hidden="true" className="pointer-events-none absolute -left-12 bottom-8 h-24 w-24 rounded-full border-[14px] border-[#74a8ff29]" />
 
-          <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-[#bee7df] bg-[#edfdf9] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#0b857a] md:text-sm">
-            <span className="inline-block h-2 w-2 rounded-full bg-[#10b7a4]" />
-            Student Event Platform
-          </p>
-
           <h1 className="mx-auto mt-5 max-w-[18ch] font-display text-5xl font-extrabold leading-[1.05] text-[#1a2a3d] md:text-7xl lg:text-8xl">
             Discover,
             <span className="bg-[linear-gradient(130deg,#0ea596,#2563eb)] bg-clip-text text-transparent"> Engage</span>,
@@ -184,7 +179,7 @@ function App() {
             </p>
           </div>
 
-          <div>
+          <div className="md:justify-self-end md:text-right">
             <h4 className="font-display text-xl font-semibold text-[#23374d]">Get in Touch</h4>
             <ul className="mt-4 space-y-2.5 text-base">
               <li><a href="mailto:support@campusconnect.com" className="transition hover:text-[#0e8f84]">support@campusconnect.com</a></li>
