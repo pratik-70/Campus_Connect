@@ -1,4 +1,18 @@
+const { useEffect, useState } = React;
+
 function App() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      setIsScrolled(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const highlights = [
     {
       title: "Smart Event Discovery",
@@ -32,20 +46,39 @@ function App() {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 [background-image:linear-gradient(rgba(107,130,160,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(107,130,160,0.08)_1px,transparent_1px)] [background-size:42px_42px]"
       />
-      <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between px-5 py-3 md:mt-6 md:w-[calc(100%-2rem)] md:px-8 md:py-4">
-        <a href="index.html" aria-label="Campus Connect Home" className="inline-flex items-center">
-          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-24 w-auto rounded-md md:h-28" />
-        </a>
+      <header className="fixed left-0 top-0 z-50 w-full">
+        <div className={`bg-[linear-gradient(180deg,#ffffffea,#f6fbffea)] shadow-[0_10px_24px_rgba(31,49,71,0.1)] ring-1 ring-[#d8e4ef] backdrop-blur transition-all duration-300 ${isScrolled ? "shadow-[0_14px_30px_rgba(31,49,71,0.16)] ring-[#c7d9ea]" : ""}`}>
+          <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 py-1 md:px-6 md:py-1.5">
+          <a href="index.html" aria-label="Campus Connect Home" className="inline-flex shrink-0 items-center gap-3">
+            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto rounded-md md:h-16" />
+          </a>
 
-        <nav className="hidden items-center gap-8 text-base font-bold text-[#24344a] lg:flex">
-          <a href="index.html" className="transition hover:text-[#0e8f84]">Home</a>
-          <a href="#events" className="transition hover:text-[#0e8f84]">Events</a>
-          <a href="#about" className="transition hover:text-[#0e8f84]">About</a>
-          <a href="#contact" className="transition hover:text-[#0e8f84]">Contact</a>
-        </nav>
+          <nav className="hidden items-center gap-1 rounded-full bg-[#ffffffbf] p-1 text-sm font-semibold text-[#314860] ring-1 ring-[#dce6f0] lg:flex">
+            <a href="index.html" className="rounded-full px-4 py-2 text-[#0e8f84]">Home</a>
+            <a href="#events" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Events</a>
+            <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">About</a>
+            <a href="#contact" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Contact</a>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <a
+              href="signin.html"
+              className="inline-flex rounded-lg border border-[#c8d5e3] bg-[#ffffff] px-3 py-2 text-sm font-semibold text-[#1f3147] transition hover:border-[#0ea59680] hover:text-[#0e8f84] md:px-4"
+            >
+              Sign In
+            </a>
+            <a
+              href="signup.html"
+              className="rounded-lg bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-3 py-2 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 md:px-4"
+            >
+              Get Started
+            </a>
+          </div>
+          </div>
+        </div>
       </header>
 
-      <main className="relative z-10 mx-auto mt-12 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-16 md:w-[calc(100%-2rem)] md:pb-20">
+      <main className="relative z-10 mx-auto mt-24 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-28 md:w-[calc(100%-2rem)] md:pb-20">
         <section className="animate-fadeUp relative overflow-hidden rounded-3xl border border-[#cfdeeb] bg-[linear-gradient(180deg,#ffffff,#f5faff)] px-6 py-12 text-center shadow-[0_22px_52px_rgba(26,49,74,0.12)] md:px-12 md:py-16">
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full border-[26px] border-[#7de4d433]" />
           <div aria-hidden="true" className="pointer-events-none absolute -left-12 bottom-8 h-24 w-24 rounded-full border-[14px] border-[#74a8ff29]" />
@@ -143,22 +176,12 @@ function App() {
       </main>
 
       <footer className="relative z-10 mx-auto mt-16 w-[calc(100%-1rem)] max-w-[1200px] rounded-3xl border border-[#d3deea] bg-[linear-gradient(180deg,#ffffff,#f5faff)] px-6 pb-8 pt-10 text-sm text-[#5d738a] shadow-[0_14px_36px_rgba(31,49,71,0.08)] md:w-[calc(100%-2rem)] md:px-10">
-        <div className="grid gap-10 text-center md:grid-cols-[1.2fr_0.9fr_0.9fr] md:text-left">
+        <div className="grid gap-10 text-center md:grid-cols-2 md:text-left">
           <div>
             <h3 className="font-display text-2xl font-semibold text-[#23374d]">Campus Connect</h3>
             <p className="mx-auto mt-4 max-w-[36ch] leading-7 text-[#637b93] md:mx-0">
               Building a connected campus where students discover events, join communities, and grow together.
             </p>
-          </div>
-
-          <div>
-            <h4 className="font-display text-xl font-semibold text-[#23374d]">Quick Links</h4>
-            <ul className="mt-4 space-y-2.5 text-base">
-              <li><a href="index.html" className="transition hover:text-[#0e8f84]">Home</a></li>
-              <li><a href="#events" className="transition hover:text-[#0e8f84]">Events</a></li>
-              <li><a href="#about" className="transition hover:text-[#0e8f84]">About</a></li>
-              <li><a href="#contact" className="transition hover:text-[#0e8f84]">Contact</a></li>
-            </ul>
           </div>
 
           <div>
