@@ -76,6 +76,18 @@ function App() {
           </div>
           </div>
         </div>
+      <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between px-5 py-3 md:mt-6 md:w-[calc(100%-2rem)] md:px-8 md:py-4">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-1 h-px bg-[linear-gradient(90deg,transparent,#95c7ff99,transparent)]" />
+        <a href="index.html" aria-label="Campus Connect Home" className="inline-flex items-center">
+          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-24 w-auto rounded-md md:h-28" />
+        </a>
+
+        <nav className="hidden items-center gap-8 text-base font-bold text-[#24344a] lg:flex">
+          <a href="index.html" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Home</a>
+          <a href="#events" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Events</a>
+          <a href="#about" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">About</a>
+          <a href="#contact" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Contact</a>
+        </nav>
       </header>
 
       <main className="relative z-10 mx-auto mt-24 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-28 md:w-[calc(100%-2rem)] md:pb-20">
@@ -98,6 +110,12 @@ function App() {
             One professional platform for students and organizers to discover events, register quickly, and build meaningful campus experiences.
           </p>
 
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#3f5f7f] md:text-sm">
+            <span className="rounded-full border border-[#c9dff5] bg-[#eef6ff] px-3 py-1.5">Live Event Feed</span>
+            <span className="rounded-full border border-[#bdebe3] bg-[#edfcf7] px-3 py-1.5">Instant Registrations</span>
+            <span className="rounded-full border border-[#d6ddff] bg-[#f1f3ff] px-3 py-1.5">Organizer Dashboard</span>
+          </div>
+
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <a
               href="signup.html"
@@ -118,14 +136,17 @@ function App() {
 
         <section id="events" className="mt-14 text-center">
           <div className="mb-7">
-            <h2 className="font-display text-3xl font-bold text-[#22364d] md:text-4xl">Why Campus </h2>
+            <h2 className="font-display text-3xl font-bold text-[#22364d] md:text-4xl">
+              Why
+              <span className="ml-2 bg-[linear-gradient(120deg,#0ea596,#2563eb)] bg-clip-text text-transparent">Campus Connect</span>
+            </h2>
             <p className="mt-2 text-[#5b7088]">Everything needed to run and join events in one place.</p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
-            {highlights.map((item) => (
-              <article key={item.title} className="group rounded-2xl border border-[#d2dfeb] bg-[linear-gradient(180deg,#ffffff,#f7fbff)] p-6 text-center shadow-[0_10px_28px_rgba(31,49,71,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(31,49,71,0.14)]">
-                <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(140deg,#ddf9f4,#dfeeff)] text-[#137e92]">●</span>
+            {highlights.map((item, index) => (
+              <article key={item.title} className="group rounded-2xl border border-[#d2dfeb] bg-[linear-gradient(180deg,#ffffff,#f7fbff)] p-6 text-center shadow-[0_10px_28px_rgba(31,49,71,0.08)] transition duration-300 hover:-translate-y-1 hover:border-[#9ed8cf] hover:shadow-[0_18px_34px_rgba(31,49,71,0.14)]">
+                <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(140deg,#ddf9f4,#dfeeff)] text-[#137e92]">{index + 1}</span>
                 <h3 className="font-display text-xl font-semibold text-[#24384e]">{item.title}</h3>
                 <p className="mt-3 leading-7 text-[#5f748a]">{item.text}</p>
               </article>
