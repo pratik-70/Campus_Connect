@@ -1,16 +1,26 @@
 const { useState } = React;
 
-const API_BASE = "http://127.0.0.1:4000/api";
+const API_HOST = window.location.hostname || "127.0.0.1";
+const API_BASE = `http://${API_HOST}:4000/api`;
+const REQUIRE_EMAIL_OTP = false;
 
 function SignupPage() {
-  const totalSteps = 5;
-  const stepTitles = [
-    "Choose your role",
-    "Academic details",
-    "Email and password",
-    "Email authentication",
-    "Choose username"
-  ];
+  const totalSteps = REQUIRE_EMAIL_OTP ? 5 : 4;
+  const stepTitles = REQUIRE_EMAIL_OTP
+    ? [
+        "Choose your role",
+        "Academic details",
+        "Email and password",
+        "Email authentication",
+        "Choose username"
+      ]
+    : [
+        "Choose your role",
+        "Academic details",
+        "Email and password",
+        "Choose username"
+      ];
+  const usernameStep = REQUIRE_EMAIL_OTP ? 5 : 4;
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -167,7 +177,7 @@ function SignupPage() {
       return "";
     }
 
-    if (currentStep === 4) {
+    if (REQUIRE_EMAIL_OTP && currentStep === 4) {
       if (!isCodeSent) {
         return "Please send the verification code to your email first.";
       }
@@ -177,7 +187,7 @@ function SignupPage() {
       return "";
     }
 
-    if (currentStep === 5) {
+    if (currentStep === usernameStep) {
       const username = formData.username.trim().toLowerCase();
       if (!/^[a-z0-9_]{4,16}$/.test(username)) {
         return "Username must be 4-16 characters, lowercase letters, numbers, or underscore.";
@@ -285,7 +295,7 @@ function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const error = validateStep(5);
+    const error = validateStep(usernameStep);
     if (error) {
       setError(error);
       return;
@@ -299,7 +309,7 @@ function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          signupProofToken,
+          signupProofToken: REQUIRE_EMAIL_OTP ? signupProofToken : null,
           accountType: formData.accountType,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -578,7 +588,7 @@ function SignupPage() {
               </div>
             )}
 
-            {step === 4 && (
+            {REQUIRE_EMAIL_OTP && step === 4 && (
               <div className="space-y-4">
                 <p className="text-sm text-[#50647d]">
                   Verify your email <span className="font-semibold text-[#1a2a3d]">{formData.email || "(not set)"}</span>
@@ -627,7 +637,7 @@ function SignupPage() {
               </div>
             )}
 
-            {step === 5 && (
+            {step === usernameStep && (
               <div>
                 <label className="block text-sm text-[#24344a]">
                   Choose a unique username

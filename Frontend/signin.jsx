@@ -1,6 +1,7 @@
 const { useState } = React;
 
-const API_BASE = "http://127.0.0.1:4000/api";
+const API_HOST = window.location.hostname || "127.0.0.1";
+const API_BASE = `http://${API_HOST}:4000/api`;
 
 function SigninPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -44,8 +45,10 @@ function SigninPage() {
         return;
       }
 
-      setMessage({ text: "Signed in successfully.", type: "success" });
-      setFormData({ email: "", password: "" });
+      localStorage.setItem("cc_token", data.token || "");
+      localStorage.setItem("cc_user", JSON.stringify(data.user || {}));
+      setMessage({ text: "Signed in successfully. Redirecting...", type: "success" });
+      window.location.href = "dashboard.html";
     } catch (_error) {
       setMessage({ text: "Network error while signing in.", type: "error" });
     } finally {

@@ -11,11 +11,12 @@ require("dotenv").config();
 
 const {
   PORT = 4000,
-  FRONTEND_ORIGIN = "http://127.0.0.1:5500",
+  FRONTEND_ORIGIN = "http://127.0.0.1:5500,http://localhost:5500",
   JWT_SECRET,
   JWT_SIGNUP_PROOF_EXPIRY = "15m",
   OTP_EXPIRY_MINUTES = "10",
   OTP_PEPPER,
+  REQUIRE_EMAIL_OTP = "false",
   RESEND_API_KEY,
   RESEND_FROM_EMAIL,
   RESEND_AUDIENCE_NAME = "Campus Connect"
@@ -30,11 +31,36 @@ const resend = new Resend(RESEND_API_KEY);
 const app = express();
 const dbPath = path.join(__dirname, "auth.db");
 const db = new sqlite3.Database(dbPath);
+const allowedOrigins = String(FRONTEND_ORIGIN)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isLoopbackOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    const hostname = (parsed.hostname || "").toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch (_error) {
+    return false;
+  }
+}
 
 app.use(express.json({ limit: "1mb" }));
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin(origin, callback) {
+      if (
+        !origin ||
+        origin === "null" ||
+        allowedOrigins.includes(origin) ||
+        isLoopbackOrigin(origin)
+      ) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     methods: ["GET", "POST"],
     credentials: false
   })
@@ -107,6 +133,28 @@ function isValidUsername(username) {
 
 function jsonError(res, status, message) {
   res.status(status).json({ message });
+}
+
+function getSessionPayload(req) {
+  const authHeader = String(req.headers.authorization || "");
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (!payload || payload.scope !== "session") {
+      return null;
+    }
+    return payload;
+  } catch (_error) {
+    return null;
+  }
 }
 
 async function initializeDatabase() {
@@ -267,20 +315,24 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
       password
     } = req.body;
 
-    if (!signupProofToken) {
-      return jsonError(res, 400, "Missing signup proof token.");
-    }
-
-    const payload = jwt.verify(signupProofToken, JWT_SECRET);
-    if (!payload || payload.scope !== "signup-proof") {
-      return jsonError(res, 401, "Invalid signup proof token.");
-    }
+    const requireEmailOtp = String(REQUIRE_EMAIL_OTP).toLowerCase() === "true";
 
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedUsername = String(username || "").trim().toLowerCase();
 
-    if (payload.email !== normalizedEmail) {
-      return jsonError(res, 400, "Email does not match verified email.");
+    if (requireEmailOtp) {
+      if (!signupProofToken) {
+        return jsonError(res, 400, "Missing signup proof token.");
+      }
+
+      const payload = jwt.verify(signupProofToken, JWT_SECRET);
+      if (!payload || payload.scope !== "signup-proof") {
+        return jsonError(res, 401, "Invalid signup proof token.");
+      }
+
+      if (payload.email !== normalizedEmail) {
+        return jsonError(res, 400, "Email does not match verified email.");
+      }
     }
 
     const allowedTypes = ["Student", "Organizer"];
@@ -402,6 +454,40 @@ app.post("/api/auth/signin", authLimiter, async (req, res) => {
   } catch (error) {
     console.error("Sign-in error:", error);
     return jsonError(res, 500, "Could not sign in right now.");
+  }
+});
+
+app.get("/api/auth/me", async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, email, username, first_name, last_name, account_type
+       FROM users
+       WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user) {
+      return jsonError(res, 401, "Session no longer valid.");
+    }
+
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        accountType: user.account_type
+      }
+    });
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return jsonError(res, 500, "Could not fetch profile right now.");
   }
 });
 
