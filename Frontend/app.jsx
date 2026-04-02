@@ -193,7 +193,7 @@ function App() {
             </p>
           </div>
 
-          <div>
+          <div className="md:justify-self-end md:text-right">
             <h4 className="font-display text-xl font-semibold text-[#23374d]">Get in Touch</h4>
             <ul className="mt-4 space-y-2.5 text-base">
               <li><a href="mailto:support@campusconnect.com" className="transition hover:text-[#0e8f84]">support@campusconnect.com</a></li>

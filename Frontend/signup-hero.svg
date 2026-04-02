@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200" role="img" aria-label="Professional teal abstract background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5cd6c7"/>
+      <stop offset="48%" stop-color="#1f9f93"/>
+      <stop offset="100%" stop-color="#0f5f59"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(300 190) rotate(90) scale(340)">
+      <stop offset="0%" stop-color="#c4fff8" stop-opacity="0.48"/>
+      <stop offset="100%" stop-color="#c4fff8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1320 980) rotate(90) scale(380)">
+      <stop offset="0%" stop-color="#88efe3" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#88efe3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shadowTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#072a27" stop-opacity="0.00"/>
+      <stop offset="100%" stop-color="#072a27" stop-opacity="0.34"/>
+    </linearGradient>
+    <linearGradient id="shadowBottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#062522" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#062522" stop-opacity="0.56"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1200" fill="url(#bg)"/>
+  <rect width="1600" height="1200" fill="url(#glowA)"/>
+  <rect width="1600" height="1200" fill="url(#glowB)"/>
+
+  <g fill="#9ef6eb" fill-opacity="0.12">
+    <path d="M0 185C155 120 300 220 465 185C640 148 730 42 900 54C1085 67 1168 245 1338 255C1458 263 1535 222 1600 192V0H0Z"/>
+    <path d="M0 1088C180 1014 330 975 505 1022C700 1075 860 1186 1060 1165C1220 1148 1388 1015 1600 995V1200H0Z"/>
+  </g>
+
+  <g stroke="#c8fff7" stroke-opacity="0.14" stroke-width="2">
+    <path d="M0 100H1600"/>
+    <path d="M0 200H1600"/>
+    <path d="M0 300H1600"/>
+    <path d="M0 400H1600"/>
+    <path d="M0 500H1600"/>
+    <path d="M0 600H1600"/>
+    <path d="M0 700H1600"/>
+    <path d="M0 800H1600"/>
+    <path d="M0 900H1600"/>
+    <path d="M0 1000H1600"/>
+    <path d="M0 1100H1600"/>
+    <path d="M100 0V1200"/>
+    <path d="M200 0V1200"/>
+    <path d="M300 0V1200"/>
+    <path d="M400 0V1200"/>
+    <path d="M500 0V1200"/>
+    <path d="M600 0V1200"/>
+    <path d="M700 0V1200"/>
+    <path d="M800 0V1200"/>
+    <path d="M900 0V1200"/>
+    <path d="M1000 0V1200"/>
+    <path d="M1100 0V1200"/>
+    <path d="M1200 0V1200"/>
+    <path d="M1300 0V1200"/>
+    <path d="M1400 0V1200"/>
+    <path d="M1500 0V1200"/>
+  </g>
+
+  <g stroke="#a6fff3" stroke-opacity="0.18" stroke-width="5">
+    <path d="M160 240L520 520"/>
+    <path d="M760 90L1110 390"/>
+    <path d="M1080 205L1450 500"/>
+    <path d="M120 860L420 1040"/>
+    <path d="M980 890L1440 1140"/>
+  </g>
+
+  <g fill="#8ff3e8" fill-opacity="0.20">
+    <circle cx="1388" cy="540" r="42"/>
+    <circle cx="146" cy="930" r="24"/>
+    <circle cx="1220" cy="980" r="22"/>
+  </g>
+
+  <rect width="1600" height="300" y="0" fill="url(#shadowTop)"/>
+  <rect width="1600" height="430" y="770" fill="url(#shadowBottom)"/>
+</svg>

@@ -358,11 +358,22 @@ function SignupPage() {
       <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#cfdeeb] shadow-[0_22px_52px_rgba(26,49,74,0.12)] lg:grid-cols-2">
         <section className="relative">
           <img
-            src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1400&q=80"
-            alt="Students in a vibrant campus environment"
+            src="signup-hero.svg"
+            alt="Students walking on a university campus"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,24,0.1),rgba(7,11,24,0.78))]" />
+          <div className="absolute left-0 right-0 top-0 p-6 md:p-10 animate-fadeUp">
+            <p className="inline-flex rounded-full border border-[#9cf6ea66] bg-[#0f3f3a66] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#bffff6]">
+              New Account Setup
+            </p>
+            <h2 className="mt-4 max-w-[18ch] font-display text-3xl font-semibold leading-tight text-[#e8fbff] md:text-4xl">
+              Start your Campus Connect journey in minutes.
+            </h2>
+            <p className="mt-3 max-w-[48ch] text-sm text-[#d5f2ff] md:text-base">
+              Create your profile, verify your institution email, and join campus events with one smooth signup flow.
+            </p>
+          </div>
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 animate-fadeUp">
             <p className="text-xs uppercase tracking-[0.14em] text-[#8df9e3]">Campus Connect</p>
             <h1 className="mt-2 max-w-[16ch] font-display text-4xl leading-tight md:text-5xl">Create your account and join the campus event network.</h1>
@@ -412,8 +423,8 @@ function SignupPage() {
                       onClick={() => setFormData((prev) => ({ ...prev, accountType: item.label }))}
                       className={`rounded-2xl border p-4 text-left transition ${
                         formData.accountType === item.label
-                          ? "border-[#0ea596] bg-[#e8f7f4]"
-                          : "border-[#d2dfeb] bg-[#ffffff] hover:border-[#bee7df]"
+                            ? "border-[#0ea596] bg-[#e8f7f4]"
+                            : "border-[#d2dfeb] bg-[#ffffff] hover:border-[#bee7df]"
                       }`}
                     >
                       <img
@@ -637,7 +648,7 @@ function SignupPage() {
                 type="button"
                 onClick={goBack}
                 disabled={step === 1 || isBusy}
-                className="rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-4 py-3 text-sm font-semibold text-[#1a2a3d] transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-[#f5faff]"
+                className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Back
               </button>
@@ -649,7 +660,7 @@ function SignupPage() {
                   disabled={isBusy}
                   className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
                 >
-                  {isBusy ? "Please wait..." : "Next Step"}
+                  {isBusy ? "Please wait..." : "Next"}
                 </button>
               ) : (
                 <button
