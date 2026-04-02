@@ -54,7 +54,7 @@ function App() {
           </a>
 
           <nav className="hidden items-center gap-1 rounded-full bg-[#ffffffbf] p-1 text-sm font-semibold text-[#314860] ring-1 ring-[#dce6f0] lg:flex">
-            <a href="index.html" className="rounded-full px-4 py-2 text-[#0e8f84]">Home</a>
+            <a href="index.html" className="rounded-full px-4 py-2 text-[#0e8f84]">nikhil</a>
             <a href="#events" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Events</a>
             <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">About</a>
             <a href="#contact" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Contact</a>
