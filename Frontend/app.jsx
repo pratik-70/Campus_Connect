@@ -49,8 +49,8 @@ function App() {
       <header className="fixed left-0 top-0 z-50 w-full">
         <div className={`bg-[linear-gradient(180deg,#ffffffea,#f6fbffea)] shadow-[0_10px_24px_rgba(31,49,71,0.1)] ring-1 ring-[#d8e4ef] backdrop-blur transition-all duration-300 ${isScrolled ? "shadow-[0_14px_30px_rgba(31,49,71,0.16)] ring-[#c7d9ea]" : ""}`}>
           <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 py-1 md:px-6 md:py-1.5">
-          <a href="index.html" aria-label="Campus Connect Home" className="inline-flex shrink-0 items-center gap-3">
-            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto rounded-md md:h-16" />
+          <a href="index.html" aria-label="Campus Connect Home" className="inline-flex shrink-0 items-center gap-3 overflow-visible">
+            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto origin-left scale-110 rounded-md md:h-16 md:scale-125" />
           </a>
 
           <nav className="hidden items-center gap-1 rounded-full bg-[#ffffffbf] p-1 text-sm font-semibold text-[#314860] ring-1 ring-[#dce6f0] lg:flex">
@@ -76,18 +76,6 @@ function App() {
           </div>
           </div>
         </div>
-      <header className="relative z-20 mx-auto mt-4 flex w-[calc(100%-1rem)] max-w-[1200px] items-center justify-between px-5 py-3 md:mt-6 md:w-[calc(100%-2rem)] md:px-8 md:py-4">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-1 h-px bg-[linear-gradient(90deg,transparent,#95c7ff99,transparent)]" />
-        <a href="index.html" aria-label="Campus Connect Home" className="inline-flex items-center">
-          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-24 w-auto rounded-md md:h-28" />
-        </a>
-
-        <nav className="hidden items-center gap-8 text-base font-bold text-[#24344a] lg:flex">
-          <a href="index.html" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Home</a>
-          <a href="#events" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Events</a>
-          <a href="#about" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">About</a>
-          <a href="#contact" className="rounded-full px-3 py-1.5 transition hover:bg-[#ebf6ff] hover:text-[#0e8f84]">Contact</a>
-        </nav>
       </header>
 
       <main className="relative z-10 mx-auto mt-24 w-[calc(100%-1rem)] max-w-[1200px] pb-16 md:mt-28 md:w-[calc(100%-2rem)] md:pb-20">
