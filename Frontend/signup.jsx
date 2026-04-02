@@ -142,7 +142,7 @@ function SignupPage() {
 
       if (!formData.yearOrDesignation.trim()) {
         return formData.accountType === "Student"
-          ? "Please enter your study year/semester."
+          ? "Please enter your semester."
           : "Please enter your designation.";
       }
       return "";
@@ -363,19 +363,24 @@ function SignupPage() {
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,24,0.1),rgba(7,11,24,0.78))]" />
-          <div className="absolute left-0 right-0 top-0 p-6 md:p-10 animate-fadeUp">
-            <p className="inline-flex rounded-full border border-[#9cf6ea66] bg-[#0f3f3a66] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#bffff6]">
-              New Account Setup
-            </p>
-            <h2 className="mt-4 max-w-[18ch] font-display text-3xl font-semibold leading-tight text-[#e8fbff] md:text-4xl">
-              Start your Campus Connect journey in minutes.
-            </h2>
-            <p className="mt-3 max-w-[48ch] text-sm text-[#d5f2ff] md:text-base">
-              Create your profile, verify your institution email, and join campus events with one smooth signup flow.
-            </p>
+          <div className="absolute left-0 right-0 top-0 flex min-h-[92px] items-center overflow-hidden bg-[#5fd8cf] px-6 py-2 shadow-[0_7px_0_0_#5fd8cf] md:min-h-[110px] md:px-10 md:shadow-[0_9px_0_0_#5fd8cf] animate-fadeUp">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(135deg, transparent 0 46%, rgba(255,255,255,0.14) 46% 48%, transparent 48% 100%)",
+                backgroundSize: "56px 56px, 120px 120px",
+                backgroundPosition: "0 0, 0 0"
+              }}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.08),transparent_24%)]" />
+            <img
+              src="campus-connect-logo.svg"
+              alt="Campus Connect"
+              className="relative z-10 h-auto w-full max-w-[255px] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:max-w-[330px]"
+            />
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 animate-fadeUp">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#8df9e3]">Campus Connect</p>
             <h1 className="mt-2 max-w-[16ch] font-display text-4xl leading-tight md:text-5xl">Create your account and join the campus event network.</h1>
             <p className="mt-4 max-w-[50ch] text-sm text-[#d6e6ff] md:text-base">
               Discover events, register instantly, and stay updated with one unified platform.
@@ -509,14 +514,14 @@ function SignupPage() {
                 </div>
 
                   <label className="mt-3 block text-sm text-[#24344a]">
-                  {formData.accountType === "Student" ? "Year / Semester" : "Designation"}
+                  {formData.accountType === "Student" ? "Semester" : "Designation"}
                   <input
                     className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
                     type="text"
                     name="yearOrDesignation"
                     value={formData.yearOrDesignation}
                     onChange={handleInput}
-                    placeholder={formData.accountType === "Student" ? "3rd Year" : "Event Coordinator"}
+                    placeholder={formData.accountType === "Student" ? "Semester 3" : "Event Coordinator"}
                   />
                 </label>
               </div>

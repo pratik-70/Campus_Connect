@@ -29,7 +29,7 @@
   </g>
 
   <g transform="translate(140, 110)">
-        <text x="0" y="0" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    <text x="0" y="0" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
           font-weight="700" font-size="42" fill="#1E3A8A">
       CAMPUS
     </text>
@@ -39,4 +39,5 @@
       CONNECT
     </text>
   </g>
+
 </svg>
