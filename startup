@@ -1,5 +1,8 @@
 Run these every time you open the project:
 
+From `D:\Campus_connect`, first enter the project folder:
+cd Campus_Connect
+
 Open Terminal 1 (Backend):
 cd Backend
 npm start
