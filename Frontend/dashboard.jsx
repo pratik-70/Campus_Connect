@@ -162,6 +162,11 @@ function DashboardPage() {
 
         const data = await response.json();
         if (mounted) {
+          const normalizedType = String(data?.user?.accountType || "").toLowerCase();
+          if (normalizedType === "organizer") {
+            window.location.href = "admin.html";
+            return;
+          }
           setUser(data.user || {});
           localStorage.setItem("cc_user", JSON.stringify(data.user || {}));
         }
@@ -244,7 +249,7 @@ function DashboardPage() {
         <div className="mx-auto max-w-[1400px] px-5 py-3 md:px-8 md:py-4">
           <div className="flex flex-wrap items-center gap-3 md:gap-4">
             <div className="flex items-center gap-3">
-              <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-11 w-auto md:h-12" />
+              <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-12 w-auto origin-left scale-105 md:h-14 md:scale-110" />
             </div>
             <div className="flex flex-1 flex-wrap justify-center gap-2 md:gap-3">
               {DEPARTMENTS.map(dept => (
@@ -475,10 +480,39 @@ function DashboardPage() {
               <h4 className="mb-4 font-semibold text-[#f3f7ff]">Connect With Us</h4>
               <p className="mb-3 text-sm text-[#aebdcd]">Follow our social media for updates</p>
               <div className="flex gap-3">
-                <a href="#" className="text-[#c9d8e7] transition hover:text-white">📘</a>
-                <a href="#" className="text-[#c9d8e7] transition hover:text-white">🐦</a>
-                <a href="#" className="text-[#c9d8e7] transition hover:text-white">📷</a>
-                <a href="#" className="text-[#c9d8e7] transition hover:text-white">💼</a>
+                <a
+                  href="https://www.linkedin.com/in/nikhil-singhal04/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn"
+                  className="rounded-full bg-white/5 p-2 text-[#c9d8e7] transition hover:bg-white/10 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                    <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.3 8h4.4v14H.3V8zm7.2 0h4.2v1.9h.06c.58-1.1 2-2.26 4.12-2.26 4.4 0 5.22 2.9 5.22 6.66V22h-4.4v-6.8c0-1.62-.03-3.7-2.26-3.7-2.26 0-2.6 1.77-2.6 3.58V22H7.5V8z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://www.instagram.com/nikhilsinghal30/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="rounded-full bg-white/5 p-2 text-[#c9d8e7] transition hover:bg-white/10 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                    <path d="M7 2C4.24 2 2 4.24 2 7v10c0 2.76 2.24 5 5 5h10c2.76 0 5-2.24 5-5V7c0-2.76-2.24-5-5-5H7zm11 2a2 2 0 110 4 2 2 0 010-4zm-6 2a6 6 0 110 12 6 6 0 010-12zm0 2.2A3.8 3.8 0 1012 16a3.8 3.8 0 000-7.6z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://wa.me/919518049986"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="WhatsApp"
+                  className="rounded-full bg-white/5 p-2 text-[#c9d8e7] transition hover:bg-white/10 hover:text-white"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                    <path d="M20.52 3.48A11.86 11.86 0 0012.06 0C5.5 0 .16 5.34.16 11.9c0 2.1.55 4.14 1.58 5.93L0 24l6.36-1.67a11.84 11.84 0 005.7 1.45h.01c6.56 0 11.9-5.34 11.9-11.9 0-3.18-1.24-6.17-3.45-8.4zM12.07 21.8h-.01a9.9 9.9 0 01-5.04-1.38l-.36-.21-3.78.99 1.01-3.68-.23-.38a9.9 9.9 0 01-1.52-5.24c0-5.46 4.44-9.9 9.92-9.9 2.65 0 5.14 1.03 7 2.9a9.82 9.82 0 012.9 7c0 5.47-4.45 9.91-9.9 9.91zm5.43-7.42c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15s-.76.97-.93 1.17c-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.46-.88-.78-1.48-1.74-1.66-2.03-.17-.3-.02-.45.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.08-.8.37-.27.3-1.04 1.02-1.04 2.49s1.06 2.9 1.2 3.1c.15.2 2.09 3.19 5.06 4.47.71.31 1.26.5 1.7.64.71.22 1.35.19 1.86.11.57-.08 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.08-.12-.27-.2-.57-.35z" />
+                  </svg>
+                </a>
               </div>
             </div>
           </div>

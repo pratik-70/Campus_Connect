@@ -48,6 +48,11 @@ function SigninPage() {
       localStorage.setItem("cc_token", data.token || "");
       localStorage.setItem("cc_user", JSON.stringify(data.user || {}));
       setMessage({ text: "Signed in successfully. Redirecting...", type: "success" });
+      const normalizedType = String(data?.user?.accountType || "").toLowerCase();
+      if (normalizedType === "organizer") {
+        window.location.href = "admin.html";
+        return;
+      }
       window.location.href = "dashboard.html";
     } catch (_error) {
       setMessage({ text: "Network error while signing in.", type: "error" });
