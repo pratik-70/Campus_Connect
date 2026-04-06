@@ -243,10 +243,132 @@ async function initializeDatabase() {
       created_at INTEGER NOT NULL
     )
   `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      department TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT NOT NULL,
+      location TEXT NOT NULL,
+      description TEXT NOT NULL,
+      organizer_id INTEGER NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (organizer_id) REFERENCES users(id)
+    )
+  `);
 }
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "campus-connect-auth-api" });
+});
+
+app.post("/api/events", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, account_type, username FROM users WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user) {
+      return jsonError(res, 401, "User not found.");
+    }
+
+    if (user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only organizers can create events.");
+    }
+
+    const { title, eventType, department, date, time, location, description } = req.body;
+
+    if (!title || !eventType || !department || !date || !time || !location || !description) {
+      return jsonError(res, 400, "Missing required event fields.");
+    }
+
+    await run(
+      `INSERT INTO events (title, event_type, department, date, time, location, description, organizer_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, eventType, department, date, time, location, description, user.id, user.username, Date.now()]
+    );
+
+    return res.status(201).json({ message: "Event created successfully." });
+  } catch (error) {
+    console.error("Create event error:", error);
+    return jsonError(res, 500, "Could not create event right now.");
+  }
+});
+
+app.get("/api/events", async (req, res) => {
+  try {
+    const { department = "", eventType = "" } = req.query;
+    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, created_by AS createdBy, created_at AS createdAt FROM events`;
+    const params = [];
+    const conditions = [];
+
+    if (department && department !== "All") {
+      conditions.push(`department = ?`);
+      params.push(department);
+    }
+
+    if (eventType && eventType !== "All") {
+      conditions.push(`event_type = ?`);
+      params.push(eventType);
+    }
+
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(" AND ")}`;
+    }
+
+    sql += ` ORDER BY date ASC, time ASC`;
+
+    const events = await all(sql, params);
+    return res.json({ events });
+  } catch (error) {
+    console.error("List events error:", error);
+    return jsonError(res, 500, "Could not fetch events right now.");
+  }
+});
+
+app.delete("/api/events/:id", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, account_type FROM users WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user || user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only the organizer can delete this event.");
+    }
+
+    const eventId = Number(req.params.id);
+    const event = await get(`SELECT organizer_id FROM events WHERE id = ?`, [eventId]);
+
+    if (!event) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    if (event.organizer_id !== user.id) {
+      return jsonError(res, 403, "You can only delete your own events.");
+    }
+
+    await run(`DELETE FROM events WHERE id = ?`, [eventId]);
+    return res.json({ message: "Event deleted successfully." });
+  } catch (error) {
+    console.error("Delete event error:", error);
+    return jsonError(res, 500, "Could not delete event right now.");
+  }
 });
 
 app.get("/api/admin/users", adminLimiter, requireDeveloper, async (_req, res) => {

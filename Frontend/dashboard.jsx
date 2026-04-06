@@ -3,126 +3,6 @@ const { useEffect, useMemo, useRef, useState } = React;
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_BASE = `http://${API_HOST}:4000/api`;
 
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    title: "CodeWars Programming Contest",
-    department: "CSE",
-    eventType: "Coding",
-    date: "2026-04-15",
-    time: "10:00 AM",
-    location: "CSE Lab 1",
-    description: "Annual programming competition for all students",
-    image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 2,
-    title: "Marketing Strategy Workshop",
-    department: "MBA",
-    eventType: "Marketing",
-    date: "2026-04-16",
-    time: "2:00 PM",
-    location: "MBA Conference Hall",
-    description: "Learn digital marketing strategies and techniques",
-    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 3,
-    title: "Bridge Design Hackathon",
-    department: "Civil",
-    eventType: "Coding",
-    date: "2026-04-17",
-    time: "9:00 AM",
-    location: "Civil Engineering Building",
-    description: "Design and simulate bridge structures",
-    image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6121?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 4,
-    title: "Public Speaking Championship",
-    department: "All",
-    eventType: "Public Speaking",
-    date: "2026-04-18",
-    time: "3:00 PM",
-    location: "Main Auditorium",
-    description: "Inter-department public speaking competition",
-    image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 5,
-    title: "Crop Yield Optimization Seminar",
-    department: "Agriculture",
-    eventType: "Seminar",
-    date: "2026-04-19",
-    time: "11:00 AM",
-    location: "Agriculture Department",
-    description: "Modern techniques for maximizing crop yield",
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 6,
-    title: "Annual Cultural Fest",
-    department: "All",
-    eventType: "Cultural",
-    date: "2026-04-20",
-    time: "6:00 PM",
-    location: "Campus Ground",
-    description: "Celebrate different cultures with music, dance, and food",
-    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 7,
-    title: "Database Design Challenge",
-    department: "CSE",
-    eventType: "Coding",
-    date: "2026-04-21",
-    time: "1:00 PM",
-    location: "CSE Lab 2",
-    description: "Design efficient database schemas",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 8,
-    title: "Supply Chain Management Workshop",
-    department: "MBA",
-    eventType: "Workshop",
-    date: "2026-04-22",
-    time: "10:00 AM",
-    location: "MBA Block",
-    description: "Optimize supply chain operations",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 9,
-    title: "Soil Conservation Talk",
-    department: "Agriculture",
-    eventType: "Seminar",
-    date: "2026-04-23",
-    time: "2:00 PM",
-    location: "Agriculture Auditorium",
-    description: "Sustainable soil management practices",
-    image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80"
-  },
-  {
-    id: 10,
-    title: "Structural Analysis Workshop",
-    department: "Civil",
-    eventType: "Workshop",
-    date: "2026-04-24",
-    time: "11:00 AM",
-    location: "Civil Building",
-    description: "Learn advanced structural analysis techniques",
-    image: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80"
-  }
-];
-
-const DEPARTMENTS = ["All", "CSE", "Civil", "MBA", "Agriculture"];
-const EVENT_TYPES = ["All", "Coding", "Marketing", "Public Speaking", "Cultural", "Workshop", "Seminar"];
-
-function getFallbackEventImage() {
-  return "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80";
-}
-
 function DashboardPage() {
   const token = localStorage.getItem("cc_token");
   const [user, setUser] = useState(() => {
@@ -134,6 +14,7 @@ function DashboardPage() {
     }
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState([]);
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedEventType, setSelectedEventType] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
@@ -186,6 +67,32 @@ function DashboardPage() {
       mounted = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadEvents() {
+      try {
+        const params = new URLSearchParams();
+        if (selectedDept !== "All") params.append("department", selectedDept);
+        if (selectedEventType !== "All") params.append("eventType", selectedEventType);
+
+        const response = await fetch(`${API_BASE}/events?${params.toString()}`);
+        const data = await response.json();
+
+        if (mounted && Array.isArray(data.events)) {
+          setEvents(data.events);
+        }
+      } catch (_error) {
+        console.error("Load events error:", _error);
+      }
+    }
+
+    loadEvents();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedDept, selectedEventType]);
 
   useEffect(() => {
     function handleClickOutside(event) {
