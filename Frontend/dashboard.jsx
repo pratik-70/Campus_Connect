@@ -3,6 +3,13 @@ const { useEffect, useMemo, useRef, useState } = React;
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_BASE = `http://${API_HOST}:4000/api`;
 
+const DEPARTMENTS = ["All", "CSE", "Civil", "MBA", "Agriculture"];
+const EVENT_TYPES = ["All", "Coding", "Marketing", "Public Speaking", "Cultural", "Workshop", "Seminar"];
+
+function getFallbackEventImage() {
+  return "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80";
+}
+
 function DashboardPage() {
   const token = localStorage.getItem("cc_token");
   const [user, setUser] = useState(() => {
@@ -15,6 +22,7 @@ function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState([]);
+  const [isReloadingEvents, setIsReloadingEvents] = useState(false);
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedEventType, setSelectedEventType] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
@@ -45,7 +53,7 @@ function DashboardPage() {
         if (mounted) {
           const normalizedType = String(data?.user?.accountType || "").toLowerCase();
           if (normalizedType === "organizer") {
-            window.location.href = "admin.html";
+            window.location.href = "organiser.html";
             return;
           }
           setUser(data.user || {});
@@ -108,12 +116,8 @@ function DashboardPage() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    return MOCK_EVENTS.filter(event => {
-      const deptMatch = selectedDept === "All" || event.department === selectedDept || event.department === "All";
-      const typeMatch = selectedEventType === "All" || event.eventType === selectedEventType;
-      return deptMatch && typeMatch;
-    });
-  }, [selectedDept, selectedEventType]);
+    return events;
+  }, [events]);
 
   const displayName = useMemo(() => {
     const first = (user.firstName || "").trim();
@@ -132,6 +136,33 @@ function DashboardPage() {
     }
     return "Good evening";
   }, []);
+
+  async function reloadEvents() {
+    try {
+      setIsReloadingEvents(true);
+      const params = new URLSearchParams();
+      if (selectedDept !== "All") params.append("department", selectedDept);
+      if (selectedEventType !== "All") params.append("eventType", selectedEventType);
+
+      const response = await fetch(`${API_BASE}/events?${params.toString()}`);
+      const data = await response.json();
+
+      if (Array.isArray(data.events)) {
+        setEvents(data.events);
+        console.log("Events reloaded:", data.events.length);
+      }
+    } catch (error) {
+      console.error("Reload events error:", error);
+    } finally {
+      setIsReloadingEvents(false);
+    }
+  }
+
+  function signOut() {
+    localStorage.removeItem("cc_token");
+    localStorage.removeItem("cc_user");
+    window.location.href = "signin.html";
+  }
 
   function signOut() {
     localStorage.removeItem("cc_token");
@@ -238,6 +269,13 @@ function DashboardPage() {
               <h2 className="text-lg font-semibold text-[#16263a] md:text-xl">Event Categories</h2>
               <p className="mt-1 text-sm text-[#5a6f86]">Filter by the event type you want to browse.</p>
             </div>
+            <button
+              onClick={reloadEvents}
+              disabled={isReloadingEvents}
+              className="rounded-full border border-[#bcd4e7] bg-white px-4 py-2 text-sm font-semibold text-[#0e8f84] transition hover:bg-[#f5faff] disabled:opacity-50"
+            >
+              {isReloadingEvents ? "Loading..." : "Refresh Events"}
+            </button>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             {EVENT_TYPES.map(type => (

@@ -180,6 +180,7 @@ function OrganizerDashboardPage() {
     } finally {
       setIsBusy(false);
     }
+  }
 
   const displayName = useMemo(() => {
     const first = (user.firstName || "").trim();

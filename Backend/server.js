@@ -266,6 +266,16 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "campus-connect-auth-api" });
 });
 
+app.get("/api/debug/events", async (_req, res) => {
+  try {
+    const events = await all(`SELECT * FROM events`);
+    return res.json({ count: events.length, events });
+  } catch (error) {
+    console.error("Debug events error:", error);
+    return jsonError(res, 500, "Could not fetch debug events.");
+  }
+});
+
 app.post("/api/events", authLimiter, async (req, res) => {
   try {
     const session = getSessionPayload(req);
@@ -326,9 +336,10 @@ app.get("/api/events", async (req, res) => {
       sql += ` WHERE ${conditions.join(" AND ")}`;
     }
 
-    sql += ` ORDER BY date ASC, time ASC`;
+    sql += ` ORDER BY created_at DESC`;
 
     const events = await all(sql, params);
+    console.log("Events fetched:", { count: events.length, filters: { department, eventType } });
     return res.json({ events });
   } catch (error) {
     console.error("List events error:", error);

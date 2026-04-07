@@ -50,7 +50,7 @@ function SigninPage() {
       setMessage({ text: "Signed in successfully. Redirecting...", type: "success" });
       const normalizedType = String(data?.user?.accountType || "").toLowerCase();
       if (normalizedType === "organizer") {
-        window.location.href = "admin.html";
+        window.location.href = "organiser.html";
         return;
       }
       window.location.href = "dashboard.html";
