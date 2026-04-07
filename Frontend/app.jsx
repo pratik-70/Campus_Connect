@@ -58,6 +58,7 @@ function App() {
             <a href="#events" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Events</a>
             <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">About</a>
             <a href="#contact" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Contact</a>
+            <a href="admin.html" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Admin Portal</a>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -117,6 +118,12 @@ function App() {
               className="rounded-xl border border-[#c8d5e3] bg-[#ffffff] px-6 py-3 text-sm font-semibold text-[#1f3147] shadow-[0_8px_20px_rgba(31,49,71,0.08)] transition hover:-translate-y-0.5 hover:border-[#0ea59680] hover:text-[#0e8f84]"
             >
               Sign In
+            </a>
+            <a
+              href="admin.html"
+              className="rounded-xl border border-[#bee8e1] bg-[#edfcf8] px-6 py-3 text-sm font-semibold text-[#0f7f72] shadow-[0_8px_20px_rgba(15,127,114,0.1)] transition hover:-translate-y-0.5 hover:border-[#8ed8cd]"
+            >
+              Developer Admin
             </a>
           </div>
 
