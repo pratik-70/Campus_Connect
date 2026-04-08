@@ -287,43 +287,35 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f7fbff_0%,#eef6ff_36%,#e9f4ff_100%)] text-[#1f3149]">
-      <header className="w-full flex flex-wrap items-center justify-between gap-4 border-b border-[#d7e5f1] bg-white/85 px-4 py-4 shadow-[0_14px_30px_rgba(30,53,79,0.08)] backdrop-blur-sm md:px-8">
-        <div className="flex items-center gap-3">
-          <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-12 w-auto" />
-          <div className="leading-tight">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#1aa395]">Student</p>
-            <h1 className="font-display text-3xl font-extrabold text-[#16263a] md:text-4xl">Profile</h1>
-          </div>
-        </div>
+      <header className="relative w-full overflow-hidden border-b border-[#d7e5f1] bg-[linear-gradient(120deg,#f8fcff_0%,#eef9f8_48%,#e8f6ff_100%)] shadow-[0_16px_40px_rgba(30,53,79,0.1)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[#3cd4c533] blur-2xl" />
+        <div className="pointer-events-none absolute -right-12 top-4 h-44 w-44 rounded-full bg-[#36a3ff26] blur-2xl" />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleBackToDashboard}
-            className="rounded-xl border border-[#c8d5e3] bg-white px-4 py-2 text-sm font-semibold text-[#1f3147] transition hover:border-[#0ea59680] hover:text-[#0e8f84]"
-          >
-            Dashboard
-          </button>
-          {!editingAbout && !editingPersonal && !editingAcademic && !editingInterests && (
+        <div className="relative mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-4 py-5 md:px-8">
+          <div className="flex items-center gap-4">
+            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-10 w-auto md:h-11" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={handleStartEditPersonal}
-              className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(22,159,145,0.22)] transition hover:-translate-y-0.5"
+              onClick={handleBackToDashboard}
+              className="rounded-full border border-[#bdd4e7] bg-white/90 px-4 py-2 text-sm font-semibold text-[#1f3147] transition hover:-translate-y-0.5 hover:border-[#8db5d8]"
             >
-              Edit profile
+              Dashboard
             </button>
-          )}
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="rounded-xl border border-[#f0c7c2] bg-white px-4 py-2 text-sm font-semibold text-[#b42318] transition hover:bg-[#fff1ef]"
-          >
-            Sign out
-          </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-full border border-[#f4c9c4] bg-white/90 px-4 py-2 text-sm font-semibold text-[#b42318] transition hover:-translate-y-0.5 hover:bg-[#fff1ef]"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-6 md:py-8 animate-fadeUp">
+      <div className="mx-auto max-w-[1100px] px-4 py-3 md:px-6 md:py-4 animate-fadeUp">
 
         {saveMessage && (
           <p className="mt-4 rounded-xl border border-[#d6e7f4] bg-white/85 px-4 py-3 text-sm text-[#39506b] shadow-[0_8px_18px_rgba(30,53,79,0.08)]">
@@ -331,10 +323,16 @@ function ProfilePage() {
           </p>
         )}
 
-        <main className="mt-6 flex flex-col gap-6">
+        <main className="mt-3 flex flex-col gap-6">
           <section className="rounded-[1.5rem] border border-[#d7e5f1] bg-white/85 px-5 py-6 shadow-[0_14px_30px_rgba(30,53,79,0.08)] backdrop-blur-sm md:px-6">
             <div className="flex flex-col items-center border-b border-[#e6eef6] pb-6 text-center">
-              <div className="relative mb-4">
+              <div className="w-full text-left">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#0f8f83]">Campus Connect</p>
+                <h1 className="mt-1 font-display text-2xl font-extrabold text-[#14273d] md:text-[2.15rem]">Profile Hub</h1>
+                <p className="mt-1 text-xs text-[#587189] md:text-sm">Manage your details, academics, and interests</p>
+              </div>
+              <div className="my-4 h-px w-full bg-[#e6eef6]" />
+              <div className="relative mb-4 mt-4">
                 <div className="flex h-32 w-32 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0e8f84,#36cfc0)] text-5xl font-bold text-white shadow-[0_10px_30px_rgba(22,159,145,0.22)]">
                   {profileInitial}
                 </div>
