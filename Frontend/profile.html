@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campus Connect | Sign In</title>
-  <meta name="description" content="Sign in to Campus Connect." />
+  <title>Campus Connect | Profile</title>
+  <meta name="description" content="Campus Connect student profile." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="icon" type="image/svg+xml" href="campus-connect-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -22,11 +21,11 @@
             body: ["Manrope", "sans-serif"]
           },
           animation: {
-            fadeUp: "fadeUp .75s ease forwards"
+            fadeUp: "fadeUp .65s ease forwards"
           },
           keyframes: {
             fadeUp: {
-              "0%": { opacity: "0", transform: "translateY(16px)" },
+              "0%": { opacity: "0", transform: "translateY(14px)" },
               "100%": { opacity: "1", transform: "translateY(0)" }
             }
           }
@@ -35,11 +34,11 @@
     };
   </script>
 </head>
-<body class="font-body text-[#f3f7ff] antialiased">
+<body class="font-body bg-[linear-gradient(140deg,#fbfdff,#e9f3ff)] text-[#1a2a3d] antialiased">
   <div id="root"></div>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="text/babel" src="signin.jsx"></script>
+  <script type="text/babel" src="profile.jsx"></script>
 </body>
 </html>

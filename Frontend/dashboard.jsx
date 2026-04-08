@@ -227,6 +227,10 @@ function DashboardPage() {
                   <div className="my-1 border-t border-[#e6eef6]"></div>
                   <button
                     type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      window.location.href = "profile.html";
+                    }}
                     className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#1f3149] transition hover:bg-[#eef5ff]"
                     role="menuitem"
                   >
