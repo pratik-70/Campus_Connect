@@ -1,16 +1,26 @@
 const { useState } = React;
 
-const API_BASE = "http://127.0.0.1:4000/api";
+const API_HOST = window.location.hostname || "127.0.0.1";
+const API_BASE = `http://${API_HOST}:4000/api`;
+const REQUIRE_EMAIL_OTP = false;
 
 function SignupPage() {
-  const totalSteps = 5;
-  const stepTitles = [
-    "Choose your role",
-    "Academic details",
-    "Email and password",
-    "Email authentication",
-    "Choose username"
-  ];
+  const totalSteps = REQUIRE_EMAIL_OTP ? 5 : 4;
+  const stepTitles = REQUIRE_EMAIL_OTP
+    ? [
+        "Choose your role",
+        "Academic details",
+        "Email and password",
+        "Email authentication",
+        "Choose username"
+      ]
+    : [
+        "Choose your role",
+        "Academic details",
+        "Email and password",
+        "Choose username"
+      ];
+  const usernameStep = REQUIRE_EMAIL_OTP ? 5 : 4;
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -142,7 +152,7 @@ function SignupPage() {
 
       if (!formData.yearOrDesignation.trim()) {
         return formData.accountType === "Student"
-          ? "Please enter your study year/semester."
+          ? "Please select your year."
           : "Please enter your designation.";
       }
       return "";
@@ -167,7 +177,7 @@ function SignupPage() {
       return "";
     }
 
-    if (currentStep === 4) {
+    if (REQUIRE_EMAIL_OTP && currentStep === 4) {
       if (!isCodeSent) {
         return "Please send the verification code to your email first.";
       }
@@ -177,7 +187,7 @@ function SignupPage() {
       return "";
     }
 
-    if (currentStep === 5) {
+    if (currentStep === usernameStep) {
       const username = formData.username.trim().toLowerCase();
       if (!/^[a-z0-9_]{4,16}$/.test(username)) {
         return "Username must be 4-16 characters, lowercase letters, numbers, or underscore.";
@@ -285,7 +295,7 @@ function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const error = validateStep(5);
+    const error = validateStep(usernameStep);
     if (error) {
       setError(error);
       return;
@@ -299,7 +309,7 @@ function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          signupProofToken,
+          signupProofToken: REQUIRE_EMAIL_OTP ? signupProofToken : null,
           accountType: formData.accountType,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
@@ -358,13 +368,29 @@ function SignupPage() {
       <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#cfdeeb] shadow-[0_22px_52px_rgba(26,49,74,0.12)] lg:grid-cols-2">
         <section className="relative">
           <img
-            src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1400&q=80"
-            alt="Students in a vibrant campus environment"
+            src="signup-hero.svg"
+            alt="Students walking on a university campus"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,24,0.1),rgba(7,11,24,0.78))]" />
+          <div className="absolute left-0 right-0 top-0 flex min-h-[92px] items-center overflow-hidden bg-[#5fd8cf] px-6 py-2 shadow-[0_7px_0_0_#5fd8cf] md:min-h-[110px] md:px-10 md:shadow-[0_9px_0_0_#5fd8cf] animate-fadeUp">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(135deg, transparent 0 46%, rgba(255,255,255,0.14) 46% 48%, transparent 48% 100%)",
+                backgroundSize: "56px 56px, 120px 120px",
+                backgroundPosition: "0 0, 0 0"
+              }}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.08),transparent_24%)]" />
+            <img
+              src="campus-connect-logo.svg"
+              alt="Campus Connect"
+              className="relative z-10 h-auto w-full max-w-[255px] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:max-w-[330px]"
+            />
+          </div>
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 animate-fadeUp">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#8df9e3]">Campus Connect</p>
             <h1 className="mt-2 max-w-[16ch] font-display text-4xl leading-tight md:text-5xl">Create your account and join the campus event network.</h1>
             <p className="mt-4 max-w-[50ch] text-sm text-[#d6e6ff] md:text-base">
               Discover events, register instantly, and stay updated with one unified platform.
@@ -412,8 +438,8 @@ function SignupPage() {
                       onClick={() => setFormData((prev) => ({ ...prev, accountType: item.label }))}
                       className={`rounded-2xl border p-4 text-left transition ${
                         formData.accountType === item.label
-                          ? "border-[#0ea596] bg-[#e8f7f4]"
-                          : "border-[#d2dfeb] bg-[#ffffff] hover:border-[#bee7df]"
+                            ? "border-[#0ea596] bg-[#e8f7f4]"
+                            : "border-[#d2dfeb] bg-[#ffffff] hover:border-[#bee7df]"
                       }`}
                     >
                       <img
@@ -498,15 +524,30 @@ function SignupPage() {
                 </div>
 
                   <label className="mt-3 block text-sm text-[#24344a]">
-                  {formData.accountType === "Student" ? "Year / Semester" : "Designation"}
-                  <input
-                    className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
-                    type="text"
-                    name="yearOrDesignation"
-                    value={formData.yearOrDesignation}
-                    onChange={handleInput}
-                    placeholder={formData.accountType === "Student" ? "3rd Year" : "Event Coordinator"}
-                  />
+                  {formData.accountType === "Student" ? "Year" : "Designation"}
+                  {formData.accountType === "Student" ? (
+                    <select
+                      className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                      name="yearOrDesignation"
+                      value={formData.yearOrDesignation}
+                      onChange={handleInput}
+                    >
+                      <option value="">Select year</option>
+                      <option value="1st year">1st Year</option>
+                      <option value="2nd year">2nd Year</option>
+                      <option value="3rd year">3rd Year</option>
+                      <option value="4th year">4th Year</option>
+                    </select>
+                  ) : (
+                    <input
+                      className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                      type="text"
+                      name="yearOrDesignation"
+                      value={formData.yearOrDesignation}
+                      onChange={handleInput}
+                      placeholder="Event Coordinator"
+                    />
+                  )}
                 </label>
               </div>
             )}
@@ -562,7 +603,7 @@ function SignupPage() {
               </div>
             )}
 
-            {step === 4 && (
+            {REQUIRE_EMAIL_OTP && step === 4 && (
               <div className="space-y-4">
                 <p className="text-sm text-[#50647d]">
                   Verify your email <span className="font-semibold text-[#1a2a3d]">{formData.email || "(not set)"}</span>
@@ -611,7 +652,7 @@ function SignupPage() {
               </div>
             )}
 
-            {step === 5 && (
+            {step === usernameStep && (
               <div>
                 <label className="block text-sm text-[#24344a]">
                   Choose a unique username
@@ -637,7 +678,7 @@ function SignupPage() {
                 type="button"
                 onClick={goBack}
                 disabled={step === 1 || isBusy}
-                className="rounded-xl border border-[#d2dfeb] bg-[#ffffff] px-4 py-3 text-sm font-semibold text-[#1a2a3d] transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-[#f5faff]"
+                className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Back
               </button>
@@ -649,7 +690,7 @@ function SignupPage() {
                   disabled={isBusy}
                   className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 text-sm font-semibold text-[#ffffff] shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
                 >
-                  {isBusy ? "Please wait..." : "Next Step"}
+                  {isBusy ? "Please wait..." : "Next"}
                 </button>
               ) : (
                 <button

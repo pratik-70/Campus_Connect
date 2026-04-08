@@ -1,6 +1,7 @@
 const { useState } = React;
 
-const API_BASE = "http://127.0.0.1:4000/api";
+const API_HOST = window.location.hostname || "127.0.0.1";
+const API_BASE = `http://${API_HOST}:4000/api`;
 
 function SigninPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -44,8 +45,15 @@ function SigninPage() {
         return;
       }
 
-      setMessage({ text: "Signed in successfully.", type: "success" });
-      setFormData({ email: "", password: "" });
+      localStorage.setItem("cc_token", data.token || "");
+      localStorage.setItem("cc_user", JSON.stringify(data.user || {}));
+      setMessage({ text: "Signed in successfully. Redirecting...", type: "success" });
+      const normalizedType = String(data?.user?.accountType || "").toLowerCase();
+      if (normalizedType === "organizer") {
+        window.location.href = "organiser.html";
+        return;
+      }
+      window.location.href = "dashboard.html";
     } catch (_error) {
       setMessage({ text: "Network error while signing in.", type: "error" });
     } finally {
@@ -65,11 +73,28 @@ function SigninPage() {
       <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1100px] overflow-hidden rounded-[2rem] border border-[#cfdeeb] shadow-[0_22px_52px_rgba(26,49,74,0.12)] lg:grid-cols-2">
         <section className="relative">
           <img
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1300&q=80"
-            alt="Students collaborating in a modern workspace"
+            src="signup-hero.svg"
+            alt="Students walking on a university campus"
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,24,0.12),rgba(7,11,24,0.8))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,24,0.1),rgba(7,11,24,0.78))]" />
+          <div className="absolute left-0 right-0 top-0 flex min-h-[92px] items-center overflow-hidden bg-[#5fd8cf] px-6 py-2 shadow-[0_7px_0_0_#5fd8cf] md:min-h-[110px] md:px-10 md:shadow-[0_9px_0_0_#5fd8cf] animate-fadeUp">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(135deg, transparent 0 46%, rgba(255,255,255,0.14) 46% 48%, transparent 48% 100%)",
+                backgroundSize: "56px 56px, 120px 120px",
+                backgroundPosition: "0 0, 0 0"
+              }}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.08),transparent_24%)]" />
+            <img
+              src="campus-connect-logo.svg"
+              alt="Campus Connect"
+              className="relative z-10 h-auto w-full max-w-[255px] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:max-w-[330px]"
+            />
+          </div>
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 animate-fadeUp">
             <p className="text-xs uppercase tracking-[0.14em] text-[#8df9e3]">Welcome Back</p>
             <h1 className="mt-2 max-w-[15ch] font-display text-4xl leading-tight md:text-5xl">Continue your campus event journey.</h1>

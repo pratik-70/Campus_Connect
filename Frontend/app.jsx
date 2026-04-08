@@ -49,15 +49,16 @@ function App() {
       <header className="fixed left-0 top-0 z-50 w-full">
         <div className={`bg-[linear-gradient(180deg,#ffffffea,#f6fbffea)] shadow-[0_10px_24px_rgba(31,49,71,0.1)] ring-1 ring-[#d8e4ef] backdrop-blur transition-all duration-300 ${isScrolled ? "shadow-[0_14px_30px_rgba(31,49,71,0.16)] ring-[#c7d9ea]" : ""}`}>
           <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 py-1 md:px-6 md:py-1.5">
-          <a href="index.html" aria-label="Campus Connect Home" className="inline-flex shrink-0 items-center gap-3">
-            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto rounded-md md:h-16" />
+          <a href="index.html" aria-label="Campus Connect Home" className="inline-flex shrink-0 items-center gap-3 overflow-visible">
+            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto origin-left scale-110 rounded-md md:h-16 md:scale-125" />
           </a>
 
           <nav className="hidden items-center gap-1 rounded-full bg-[#ffffffbf] p-1 text-sm font-semibold text-[#314860] ring-1 ring-[#dce6f0] lg:flex">
-            <a href="index.html" className="rounded-full px-4 py-2 text-[#0e8f84]">Home</a>
+            <a href="index.html" className="rounded-full px-4 py-2 text-[#0e8f84]">nikhil</a>
             <a href="#events" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Events</a>
             <a href="#about" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">About</a>
             <a href="#contact" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Contact</a>
+            <a href="admin.html" className="rounded-full px-4 py-2 transition hover:bg-[#ecf7f5] hover:text-[#0e8f84]">Admin Portal</a>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -110,6 +111,12 @@ function App() {
               className="rounded-xl border border-[#c8d5e3] bg-[#ffffff] px-6 py-3 text-sm font-semibold text-[#1f3147] shadow-[0_8px_20px_rgba(31,49,71,0.08)] transition hover:-translate-y-0.5 hover:border-[#0ea59680] hover:text-[#0e8f84]"
             >
               Sign In
+            </a>
+            <a
+              href="admin.html"
+              className="rounded-xl border border-[#bee8e1] bg-[#edfcf8] px-6 py-3 text-sm font-semibold text-[#0f7f72] shadow-[0_8px_20px_rgba(15,127,114,0.1)] transition hover:-translate-y-0.5 hover:border-[#8ed8cd]"
+            >
+              Developer Admin
             </a>
           </div>
 
