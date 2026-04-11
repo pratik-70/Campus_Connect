@@ -2,7 +2,7 @@ const { useEffect, useMemo, useState } = React;
 
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_BASE = `http://${API_HOST}:4000/api`;
-const ADMIN_KEY_STORAGE = "cc_dev_admin_key";
+const ADMIN_TOKEN_STORAGE = "cc_admin_token";
 
 function formatDate(timestamp) {
   if (!timestamp) return "-";
@@ -68,8 +68,85 @@ function StatCard({ label, value, tone = "blue" }) {
   );
 }
 
-function AdminPortalPage() {
-  const [adminKey, setAdminKey] = useState(() => localStorage.getItem(ADMIN_KEY_STORAGE) || "");
+function LoginPage({ onLogin, isLoading, error }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [localError, setLocalError] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setLocalError("");
+
+    if (!email.trim()) {
+      setLocalError("Email is required");
+      return;
+    }
+
+    if (!password.trim()) {
+      setLocalError("Password is required");
+      return;
+    }
+
+    onLogin(email, password);
+  }
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,#f4fbff_0%,#eaf5ff_45%,#e7f4f2_100%)] p-4">
+      <div className="w-full max-w-md rounded-2xl border border-[#c9dbea] bg-white p-8 shadow-[0_20px_48px_rgba(17,42,61,0.12)]">
+        <div className="mb-8 text-center">
+          <h1 className="font-display text-3xl font-bold text-[#132b3f]">Admin Portal</h1>
+          <p className="mt-2 text-sm text-[#52677f]">Secure administrator access</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#2a4057] mb-2">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@campusconnect.com"
+              className="w-full rounded-xl border border-[#d2dfeb] bg-white px-4 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#2a4057] mb-2">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="w-full rounded-xl border border-[#d2dfeb] bg-white px-4 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+              disabled={isLoading}
+            />
+          </div>
+
+          {(error || localError) && (
+            <div className="rounded-lg bg-[#fdeef1] p-3 text-sm font-medium text-[#c53c58]">
+              {error || localError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] py-3 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isLoading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-[#52677f]">
+          Unauthorized access attempts are logged and monitored.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AdminPortalPage({ token, onLogout }) {
   const [users, setUsers] = useState([]);
   const [health, setHealth] = useState({ ok: false, service: "Unknown" });
   const [eventCount, setEventCount] = useState(0);
@@ -80,11 +157,6 @@ function AdminPortalPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
 
   async function fetchAdminData() {
-    if (!adminKey.trim()) {
-      setError("Enter DEV_ADMIN_KEY to load developer data.");
-      return;
-    }
-
     try {
       setIsBusy(true);
       setError("");
@@ -93,7 +165,7 @@ function AdminPortalPage() {
         fetch(`${API_BASE}/health`),
         fetch(`${API_BASE}/admin/users`, {
           headers: {
-            "x-admin-key": adminKey.trim()
+            "Authorization": `Bearer ${token}`
           }
         }),
         fetch(`${API_BASE}/events`)
@@ -114,7 +186,6 @@ function AdminPortalPage() {
 
       setUsers(Array.isArray(usersData.users) ? usersData.users : []);
       setLastSyncedAt(Date.now());
-      localStorage.setItem(ADMIN_KEY_STORAGE, adminKey.trim());
     } catch (_error) {
       setError("Network issue while loading developer admin data.");
     } finally {
@@ -123,12 +194,9 @@ function AdminPortalPage() {
   }
 
   useEffect(() => {
-    if (adminKey.trim()) {
-      fetchAdminData();
-    }
-    // Intentionally load once if a key is already saved.
+    fetchAdminData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [token]);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -178,7 +246,7 @@ function AdminPortalPage() {
       <div className="mx-auto max-w-[1400px] rounded-[2rem] border border-[#c9dbea] bg-[linear-gradient(180deg,#ffffff,#f4f9ff)] p-5 shadow-[0_20px_48px_rgba(17,42,61,0.12)] md:p-8 animate-fadeUp">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0f8c80]">Developer Tools</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0f8c80]">Administrator</p>
             <h1 className="font-display text-3xl font-bold text-[#132b3f] md:text-4xl">Admin Portal</h1>
             <p className="mt-1 text-sm text-[#52677f]">Inspect registered users, monitor service health, and export user records.</p>
           </div>
@@ -186,52 +254,43 @@ function AdminPortalPage() {
             <a href="index.html" className="rounded-xl border border-[#c9d8e7] bg-white px-4 py-2 text-sm font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]">Home</a>
             <button
               type="button"
-              onClick={() => {
-                localStorage.removeItem(ADMIN_KEY_STORAGE);
-                setAdminKey("");
-                setUsers([]);
-                setError("");
-              }}
+              onClick={onLogout}
               className="rounded-xl border border-[#f0d4dc] bg-white px-4 py-2 text-sm font-semibold text-[#9b3b50] transition hover:border-[#e8b8c4]"
             >
-              Clear Key
+              Logout
             </button>
           </div>
         </header>
 
-        <section className="mt-6 rounded-2xl border border-[#d5e3ef] bg-white/90 p-4 md:p-5">
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-            <label className="block text-sm text-[#2a4057]">
-              Developer Admin Key (DEV_ADMIN_KEY)
-              <input
-                className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
-                type="password"
-                value={adminKey}
-                onChange={(event) => setAdminKey(event.target.value)}
-                placeholder="Enter backend DEV_ADMIN_KEY"
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={fetchAdminData}
-              disabled={isBusy}
-              className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isBusy ? "Loading..." : "Load Admin Data"}
-            </button>
+        <section className="mt-6 flex items-center justify-between rounded-2xl border border-[#d5e3ef] bg-white/90 p-4 md:p-5">
+          <div>
+            <p className="text-sm text-[#2a4057]">
+              <span className="font-semibold text-[#0ea596]">Authenticated</span> as admin user
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={fetchAdminData}
+            disabled={isBusy}
+            className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isBusy ? "Loading..." : "Refresh Data"}
+          </button>
+        </section>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#4f6780]">
-            <span className={`rounded-full px-3 py-1 font-semibold ${health.ok ? "bg-[#e8f8f4] text-[#0a7e68]" : "bg-[#fdeef1] text-[#9e2d4f]"}`}>
-              Service: {health.ok ? "Healthy" : "Unavailable"}
-            </span>
-            <span className="rounded-full bg-[#edf4ff] px-3 py-1 font-semibold text-[#2c4d77]">API: {health.service || "Unknown"}</span>
-            <span className="rounded-full bg-[#fff4e8] px-3 py-1 font-semibold text-[#91551f]">Events: {eventCount}</span>
-            <span className="rounded-full bg-[#f4f6f9] px-3 py-1 font-semibold text-[#425970]">Last sync: {formatDate(lastSyncedAt)}</span>
-          </div>
+        {error && (
+          <section className="mt-6 rounded-2xl border border-[#f8d7dd] bg-[#fdeef1] p-4">
+            <p className="text-sm font-medium text-[#c53c58]">{error}</p>
+          </section>
+        )}
 
-          {error && <p className="mt-3 text-sm font-medium text-[#c53c58]">{error}</p>}
+        <section className="mt-6 flex flex-wrap items-center gap-3 text-xs text-[#4f6780]">
+          <span className={`rounded-full px-3 py-1 font-semibold ${health.ok ? "bg-[#e8f8f4] text-[#0a7e68]" : "bg-[#fdeef1] text-[#9e2d4f]"}`}>
+            Service: {health.ok ? "Healthy" : "Unavailable"}
+          </span>
+          <span className="rounded-full bg-[#edf4ff] px-3 py-1 font-semibold text-[#2c4d77]">API: {health.service || "Unknown"}</span>
+          <span className="rounded-full bg-[#fff4e8] px-3 py-1 font-semibold text-[#91551f]">Events: {eventCount}</span>
+          <span className="rounded-full bg-[#f4f6f9] px-3 py-1 font-semibold text-[#425970]">Last sync: {formatDate(lastSyncedAt)}</span>
         </section>
 
         <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -339,6 +398,51 @@ function AdminPortalPage() {
   );
 }
 
+function App() {
+  const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_STORAGE) || "");
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  async function handleLogin(email, password) {
+    setIsLoading(true);
+    setLoginError("");
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setLoginError(data.message || "Login failed");
+        return;
+      }
+
+      localStorage.setItem(ADMIN_TOKEN_STORAGE, data.token);
+      setToken(data.token);
+    } catch (error) {
+      setLoginError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(ADMIN_TOKEN_STORAGE);
+    setToken("");
+    setLoginError("");
+  }
+
+  return token ? (
+    <AdminPortalPage token={token} onLogout={handleLogout} />
+  ) : (
+    <LoginPage onLogin={handleLogin} isLoading={isLoading} error={loginError} />
+  );
+}
+
 const rootElement = document.getElementById("root");
 const root = ReactDOM.createRoot(rootElement);
-root.render(<AdminPortalPage />);
+root.render(<App />);

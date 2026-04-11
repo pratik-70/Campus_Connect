@@ -18,6 +18,8 @@ const {
   OTP_PEPPER,
   REQUIRE_EMAIL_OTP = "false",
   DEV_ADMIN_KEY = "",
+  ADMIN_EMAIL = "",
+  ADMIN_PASSWORD = "",
   RESEND_API_KEY,
   RESEND_FROM_EMAIL,
   RESEND_AUDIENCE_NAME = "Campus Connect"
@@ -27,6 +29,11 @@ const emailOtpEnabled = String(REQUIRE_EMAIL_OTP).toLowerCase() === "true";
 
 if (!JWT_SECRET || !OTP_PEPPER) {
   console.error("Missing required env vars. Check backend/.env.example");
+  process.exit(1);
+}
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("ADMIN_EMAIL and ADMIN_PASSWORD are required in .env");
   process.exit(1);
 }
 
@@ -187,6 +194,21 @@ function getAdminKeyFromRequest(req) {
 }
 
 function requireDeveloper(req, res, next) {
+  // Check for valid admin JWT token first
+  const authHeader = String(req.headers.authorization || "");
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      if (payload && payload.role === "admin") {
+        return next();
+      }
+    } catch (_error) {
+      // Fall through to check x-admin-key
+    }
+  }
+
+  // Fall back to checking dev admin key
   if (!String(DEV_ADMIN_KEY || "").trim()) {
     return jsonError(res, 503, "Admin access is not configured on this server.");
   }
@@ -386,6 +408,31 @@ app.delete("/api/events/:id", authLimiter, async (req, res) => {
   } catch (error) {
     console.error("Delete event error:", error);
     return jsonError(res, 500, "Could not delete event right now.");
+  }
+});
+
+app.post("/api/admin/login", adminLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return jsonError(res, 400, "Email and password are required.");
+    }
+
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return jsonError(res, 401, "Invalid email or password.");
+    }
+
+    const adminToken = jwt.sign(
+      { role: "admin", email: ADMIN_EMAIL },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    res.json({ token: adminToken, email: ADMIN_EMAIL });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return jsonError(res, 500, "Login failed. Please try again.");
   }
 });
 
