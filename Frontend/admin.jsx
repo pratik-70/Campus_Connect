@@ -2,7 +2,6 @@ const { useEffect, useMemo, useState } = React;
 
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_BASE = `http://${API_HOST}:4000/api`;
-const ADMIN_TOKEN_STORAGE = "cc_admin_token";
 
 function formatDate(timestamp) {
   if (!timestamp) return "-";
@@ -399,7 +398,7 @@ function AdminPortalPage({ token, onLogout }) {
 }
 
 function App() {
-  const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_STORAGE) || "");
+  const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
@@ -421,7 +420,6 @@ function App() {
         return;
       }
 
-      localStorage.setItem(ADMIN_TOKEN_STORAGE, data.token);
       setToken(data.token);
     } catch (error) {
       setLoginError("Network error. Please try again.");
@@ -431,7 +429,6 @@ function App() {
   }
 
   function handleLogout() {
-    localStorage.removeItem(ADMIN_TOKEN_STORAGE);
     setToken("");
     setLoginError("");
   }
