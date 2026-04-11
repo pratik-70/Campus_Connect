@@ -5,6 +5,7 @@ const API_BASE = `http://${API_HOST}:4000/api`;
 
 function OrganizerDashboardPage() {
   const token = localStorage.getItem("cc_token");
+  const MAX_POSTER_FILE_SIZE = 1500 * 1024;
   const [user, setUser] = useState(() => {
     const rawUser = localStorage.getItem("cc_user");
     try {
@@ -25,7 +26,8 @@ function OrganizerDashboardPage() {
     date: "",
     time: "",
     location: "",
-    description: ""
+    description: "",
+    posterImage: ""
   });
 
   if (!token) {
@@ -109,6 +111,44 @@ function OrganizerDashboardPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handlePosterUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      setFormData((prev) => ({ ...prev, posterImage: "" }));
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Poster must be an image file (jpg, png, webp, etc.)." });
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_POSTER_FILE_SIZE) {
+      setMessage({ type: "error", text: "Poster file must be under 1.5MB." });
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const encoded = typeof reader.result === "string" ? reader.result : "";
+      if (!encoded.startsWith("data:image/")) {
+        setMessage({ type: "error", text: "Could not process selected image." });
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, posterImage: encoded }));
+      setMessage({ type: "success", text: "Poster selected and ready to publish." });
+    };
+
+    reader.onerror = () => {
+      setMessage({ type: "error", text: "Failed to read image file." });
+    };
+
+    reader.readAsDataURL(file);
+  }
+
   function handleLogout() {
     localStorage.removeItem("cc_token");
     localStorage.removeItem("cc_user");
@@ -147,7 +187,8 @@ function OrganizerDashboardPage() {
           date: formData.date,
           time: formData.time,
           location: formData.location.trim(),
-          description: formData.description.trim()
+          description: formData.description.trim(),
+          posterImage: formData.posterImage
         })
       });
 
@@ -165,7 +206,8 @@ function OrganizerDashboardPage() {
         date: "",
         time: "",
         location: "",
-        description: ""
+        description: "",
+        posterImage: ""
       });
 
       setMessage({ type: "success", text: "Event created successfully." });
@@ -325,6 +367,23 @@ function OrganizerDashboardPage() {
                 />
               </label>
 
+              <label className="block text-sm text-[#24344a]">
+                Event poster (optional)
+                <input
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-sm text-[#1a2a3d] outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-[#eef6ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#2a4f77] hover:file:bg-[#e3f0ff] focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePosterUpload}
+                />
+                <span className="mt-2 block text-xs text-[#5f748a]">Maximum size: 1.5MB</span>
+              </label>
+
+              {formData.posterImage && (
+                <div className="overflow-hidden rounded-xl border border-[#d2dfeb] bg-[#f8fbff] p-2">
+                  <img src={formData.posterImage} alt="Event poster preview" className="h-40 w-full rounded-lg object-cover" />
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isBusy}
@@ -360,6 +419,13 @@ function OrganizerDashboardPage() {
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-[#4e637a]">{event.description}</p>
+                    {(event.posterImage || event.image) && (
+                      <img
+                        src={event.posterImage || event.image}
+                        alt={`${event.title} poster`}
+                        className="mt-3 h-36 w-full rounded-lg border border-[#d9e6f2] object-cover"
+                      />
+                    )}
                     <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-[#5f748a] sm:grid-cols-2">
                       <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
                       <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>

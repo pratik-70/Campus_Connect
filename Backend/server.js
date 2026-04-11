@@ -61,7 +61,7 @@ function isLoopbackOrigin(origin) {
   }
 }
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "5mb" }));
 app.use(
   cors({
     origin(origin, callback) {
@@ -168,6 +168,16 @@ function isValidUsername(username) {
 
 function jsonError(res, status, message) {
   res.status(status).json({ message });
+}
+
+function isValidDataImage(value) {
+  if (!value) return true;
+  if (typeof value !== "string") return false;
+  if (!value.startsWith("data:image/")) return false;
+  if (!value.includes(";base64,")) return false;
+
+  // Keep inline poster payloads bounded so event POST requests remain lightweight.
+  return Buffer.byteLength(value, "utf8") <= 2 * 1024 * 1024;
 }
 
 function constantTimeEqual(a, b) {
@@ -283,12 +293,19 @@ async function initializeDatabase() {
       time TEXT NOT NULL,
       location TEXT NOT NULL,
       description TEXT NOT NULL,
+      poster_image TEXT,
       organizer_id INTEGER NOT NULL,
       created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (organizer_id) REFERENCES users(id)
     )
   `);
+
+  const eventColumns = await all(`PRAGMA table_info(events)`);
+  const hasPosterImage = eventColumns.some((column) => column.name === "poster_image");
+  if (!hasPosterImage) {
+    await run(`ALTER TABLE events ADD COLUMN poster_image TEXT`);
+  }
 }
 
 app.get("/api/health", (_req, res) => {
@@ -325,16 +342,20 @@ app.post("/api/events", authLimiter, async (req, res) => {
       return jsonError(res, 403, "Only organizers can create events.");
     }
 
-    const { title, eventType, department, date, time, location, description } = req.body;
+    const { title, eventType, department, date, time, location, description, posterImage = "" } = req.body;
 
     if (!title || !eventType || !department || !date || !time || !location || !description) {
       return jsonError(res, 400, "Missing required event fields.");
     }
 
+    if (!isValidDataImage(posterImage)) {
+      return jsonError(res, 400, "Poster image must be a valid image upload under 2MB.");
+    }
+
     await run(
-      `INSERT INTO events (title, event_type, department, date, time, location, description, organizer_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, eventType, department, date, time, location, description, user.id, user.username, Date.now()]
+      `INSERT INTO events (title, event_type, department, date, time, location, description, poster_image, organizer_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, eventType, department, date, time, location, description, posterImage || null, user.id, user.username, Date.now()]
     );
 
     return res.status(201).json({ message: "Event created successfully." });
@@ -347,7 +368,7 @@ app.post("/api/events", authLimiter, async (req, res) => {
 app.get("/api/events", async (req, res) => {
   try {
     const { department = "", eventType = "" } = req.query;
-    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, created_by AS createdBy, created_at AS createdAt FROM events`;
+    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, poster_image AS posterImage, poster_image AS image, created_by AS createdBy, created_at AS createdAt FROM events`;
     const params = [];
     const conditions = [];
 

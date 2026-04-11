@@ -331,7 +331,7 @@ function DashboardPage() {
                 className="group overflow-hidden rounded-[1.75rem] border border-[#d8e5f0] bg-white shadow-[0_12px_28px_rgba(30,53,79,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(30,53,79,0.12)]"
               >
                 <img
-                  src={event.image || getFallbackEventImage()}
+                  src={event.posterImage || event.image || getFallbackEventImage()}
                   alt={event.title}
                   className="h-52 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                   onError={(e) => {
@@ -367,7 +367,7 @@ function DashboardPage() {
             {filteredEvents.map(event => (
               <div key={event.id} className="flex gap-5 rounded-[1.5rem] border border-[#d8e5f0] bg-white p-5 shadow-[0_12px_28px_rgba(30,53,79,0.08)] transition hover:shadow-[0_16px_34px_rgba(30,53,79,0.12)]">
                 <img
-                  src={event.image || getFallbackEventImage()}
+                  src={event.posterImage || event.image || getFallbackEventImage()}
                   alt={event.title}
                   className="h-36 w-36 flex-shrink-0 rounded-2xl object-cover"
                   onError={(e) => {
