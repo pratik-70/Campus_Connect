@@ -37,6 +37,7 @@ function EventRegistrationPage() {
   const [eventData, setEventData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [status, setStatus] = useState({ type: "idle", text: "" });
   const [formData, setFormData] = useState(() => {
     const rawUser = localStorage.getItem("cc_user");
@@ -126,6 +127,44 @@ function EventRegistrationPage() {
     };
   }, [token]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRegistrationStatus() {
+      if (!eventData?.id) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/me/registrations`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await response.json().catch(() => ({ registrations: [] }));
+
+        if (!response.ok) {
+          return;
+        }
+
+        const registrations = Array.isArray(data.registrations) ? data.registrations : [];
+        const exists = registrations.some((registration) => String(registration.eventId) === String(eventData.id));
+
+        if (mounted) {
+          setAlreadyRegistered(exists);
+          if (exists) {
+            setStatus({ type: "info", text: "You are already registered for this event." });
+          }
+        }
+      } catch (_error) {
+        // keep page usable even if this check fails
+      }
+    }
+
+    loadRegistrationStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [eventData, token]);
+
   const pricingLabel = useMemo(() => formatPricingLabel(eventData), [eventData]);
 
   function handleInput(event) {
@@ -138,6 +177,11 @@ function EventRegistrationPage() {
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
       setStatus({ type: "error", text: "Please fill name, email, and phone to continue." });
+      return;
+    }
+
+    if (alreadyRegistered) {
+      setStatus({ type: "info", text: "You are already registered for this event." });
       return;
     }
 
@@ -167,10 +211,16 @@ function EventRegistrationPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status === 409) {
+          setAlreadyRegistered(true);
+          setStatus({ type: "info", text: data.message || "You are already registered for this event." });
+          return;
+        }
         setStatus({ type: "error", text: data.message || "Could not complete registration right now." });
         return;
       }
 
+      setAlreadyRegistered(true);
       setStatus({ type: "success", text: "You are successfully registered for this event." });
     } catch (_error) {
       setStatus({ type: "error", text: "Network issue while submitting registration." });
@@ -327,14 +377,18 @@ function EventRegistrationPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="mt-2 w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-white shadow-[0_8px_18px_rgba(22,159,145,0.24)] transition hover:-translate-y-0.5 hover:brightness-105"
+              disabled={isSubmitting || alreadyRegistered}
+              className={`mt-2 w-full rounded-xl px-4 py-3 font-semibold text-white shadow-[0_8px_18px_rgba(22,159,145,0.24)] transition ${
+                alreadyRegistered
+                  ? "cursor-not-allowed bg-[#7ba8a3]"
+                  : "bg-[linear-gradient(135deg,#169f91,#36cfc0)] hover:-translate-y-0.5 hover:brightness-105"
+              }`}
             >
-              {isSubmitting ? "Submitting..." : "Confirm Registration"}
+              {alreadyRegistered ? "Already Registered" : isSubmitting ? "Submitting..." : "Confirm Registration"}
             </button>
 
             {status.text && (
-              <p className={`text-sm ${status.type === "success" ? "text-[#12806a]" : "text-[#b13a4f]"}`}>
+              <p className={`text-sm ${status.type === "success" ? "text-[#12806a]" : status.type === "info" ? "text-[#2d6f95]" : "text-[#b13a4f]"}`}>
                 {status.text}
               </p>
             )}

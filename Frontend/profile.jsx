@@ -44,6 +44,8 @@ function ProfilePage() {
   const [editingInterests, setEditingInterests] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [profileForm, setProfileForm] = useState(getInitialProfileForm);
+  const [myRegistrations, setMyRegistrations] = useState([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
 
   if (!token) {
     window.location.href = "signin.html";
@@ -109,6 +111,44 @@ function ProfilePage() {
     });
   }, [user.firstName, user.lastName, user.username, user.email]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadMyRegistrations() {
+      try {
+        setIsLoadingRegistrations(true);
+        const response = await fetch(`${API_BASE}/me/registrations`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json().catch(() => ({ registrations: [] }));
+        if (!response.ok) {
+          if (mounted) setMyRegistrations([]);
+          return;
+        }
+
+        if (mounted) {
+          setMyRegistrations(Array.isArray(data.registrations) ? data.registrations : []);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setMyRegistrations([]);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingRegistrations(false);
+        }
+      }
+    }
+
+    loadMyRegistrations();
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
+
   const displayName = `${profileForm.firstName.trim()} ${profileForm.lastName.trim()}`.trim() || (profileForm.username || "student");
   const profileInitial = (displayName[0] || "S").toUpperCase();
   const accountType = user.accountType ? `${String(user.accountType).charAt(0).toUpperCase()}${String(user.accountType).slice(1)}` : "Student";
@@ -141,6 +181,16 @@ function ProfilePage() {
     localStorage.removeItem("cc_token");
     localStorage.removeItem("cc_user");
     window.location.href = "signin.html";
+  }
+
+  function handleGoToRegistrations() {
+    const section = document.getElementById("registrations");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.history.replaceState(null, "", "#registrations");
+      return;
+    }
+    window.location.hash = "registrations";
   }
 
   function handleInputChange(event) {
@@ -303,6 +353,13 @@ function ProfilePage() {
               className="rounded-full border border-[#bdd4e7] bg-white/90 px-4 py-2 text-sm font-semibold text-[#1f3147] transition hover:-translate-y-0.5 hover:border-[#8db5d8]"
             >
               Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={handleGoToRegistrations}
+              className="rounded-full border border-[#bde8e1] bg-white/90 px-4 py-2 text-sm font-semibold text-[#0f7f72] transition hover:-translate-y-0.5 hover:border-[#8ed4c8]"
+            >
+              My Registrations
             </button>
             <button
               type="button"
@@ -604,6 +661,30 @@ function ProfilePage() {
                     </button>
                   </div>
                 </>
+              )}
+            </section>
+
+            <section id="registrations" className="scroll-mt-20 rounded-[1.5rem] border border-[#d7e5f1] bg-white/85 px-5 py-6 shadow-[0_14px_30px_rgba(30,53,79,0.08)] backdrop-blur-sm md:px-6">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#149a8e]">My Registrations</h3>
+
+              {isLoadingRegistrations ? (
+                <p className="mt-3 text-sm text-[#5f748a]">Loading your registration events...</p>
+              ) : myRegistrations.length === 0 ? (
+                <p className="mt-3 text-sm text-[#5f748a]">You have not registered for any events yet.</p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {myRegistrations.slice(0, 8).map((registration) => (
+                    <article key={registration.id} className="rounded-xl border border-[#deebf5] bg-[#f8fcff] p-3">
+                      <h4 className="font-display text-base font-semibold text-[#1f3149]">{registration.eventTitle}</h4>
+                      <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-[#5f748a] sm:grid-cols-2">
+                        <p>Date: {registration.date}</p>
+                        <p>Time: {registration.time}</p>
+                        <p>Venue: {registration.location}</p>
+                        <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               )}
             </section>
           </aside>

@@ -516,6 +516,59 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
   }
 });
 
+app.get("/api/me/registrations", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, account_type FROM users WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user) {
+      return jsonError(res, 401, "User not found.");
+    }
+
+    if (user.account_type !== "Student") {
+      return jsonError(res, 403, "Only student accounts can access registrations.");
+    }
+
+    const registrations = await all(
+      `SELECT
+          r.id,
+          r.event_id AS eventId,
+          r.full_name AS fullName,
+          r.email,
+          r.phone,
+          r.year_or_designation AS yearOrDesignation,
+          r.notes,
+          r.pricing_label AS pricingLabel,
+          r.created_at AS createdAt,
+          e.title AS eventTitle,
+          e.event_type AS eventType,
+          e.department,
+          e.date,
+          e.time,
+          e.location,
+          e.poster_image AS posterImage,
+          e.poster_image AS image
+       FROM event_registrations r
+       INNER JOIN events e ON e.id = r.event_id
+       WHERE r.user_id = ?
+       ORDER BY r.created_at DESC`,
+      [user.id]
+    );
+
+    return res.json({ count: registrations.length, registrations });
+  } catch (error) {
+    console.error("My registrations error:", error);
+    return jsonError(res, 500, "Could not fetch your registrations right now.");
+  }
+});
+
 app.get("/api/organizer/events", async (req, res) => {
   try {
     const session = getSessionPayload(req);

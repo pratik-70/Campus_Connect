@@ -22,7 +22,9 @@ function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState([]);
+  const [myRegistrations, setMyRegistrations] = useState([]);
   const [isReloadingEvents, setIsReloadingEvents] = useState(false);
+  const [isLoadingMyRegistrations, setIsLoadingMyRegistrations] = useState(false);
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedEventType, setSelectedEventType] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
@@ -103,6 +105,46 @@ function DashboardPage() {
   }, [selectedDept, selectedEventType]);
 
   useEffect(() => {
+    let mounted = true;
+
+    async function loadMyRegistrations() {
+      try {
+        setIsLoadingMyRegistrations(true);
+        const response = await fetch(`${API_BASE}/me/registrations`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await response.json().catch(() => ({ registrations: [] }));
+
+        if (!response.ok) {
+          if (mounted) {
+            setMyRegistrations([]);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setMyRegistrations(Array.isArray(data.registrations) ? data.registrations : []);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setMyRegistrations([]);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingMyRegistrations(false);
+        }
+      }
+    }
+
+    loadMyRegistrations();
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
@@ -157,6 +199,10 @@ function DashboardPage() {
       setIsReloadingEvents(false);
     }
   }
+
+  const registeredEventIdSet = useMemo(() => {
+    return new Set(myRegistrations.map((registration) => Number(registration.eventId)).filter(Number.isFinite));
+  }, [myRegistrations]);
 
   function handleRegisterClick(eventItem) {
     if (!eventItem) return;
@@ -332,6 +378,41 @@ function DashboardPage() {
             List View
           </button>
         </div>
+
+        <section className="mb-10 rounded-[1.4rem] border border-[#d7e5f1] bg-white/80 p-5 shadow-[0_12px_26px_rgba(30,53,79,0.08)]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[#16263a] md:text-xl">My Registrations</h2>
+              <p className="mt-1 text-sm text-[#5a6f86]">Track all events you have already booked.</p>
+            </div>
+            <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-semibold text-[#224d7a]">
+              {isLoadingMyRegistrations ? "Loading..." : `${myRegistrations.length} registered`}
+            </span>
+          </div>
+
+          {isLoadingMyRegistrations ? (
+            <p className="text-sm text-[#5f748a]">Loading your registrations...</p>
+          ) : myRegistrations.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-5 text-sm text-[#5f748a]">
+              You have not registered for any events yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {myRegistrations.slice(0, 6).map((registration) => (
+                <article key={registration.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
+                  <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{registration.eventTitle}</h3>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-[#5f748a]">
+                    <p>Date: {registration.date}</p>
+                    <p>Time: {registration.time}</p>
+                    <p>Venue: {registration.location}</p>
+                    <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         {filteredEvents.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#5a6f86] text-lg">No events found for the selected filters.</p>
@@ -370,9 +451,14 @@ function DashboardPage() {
                   </div>
                   <button
                     onClick={() => handleRegisterClick(event)}
-                    className="mt-5 w-full rounded-full bg-[#0e8f84] py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]"
+                    disabled={registeredEventIdSet.has(Number(event.id))}
+                    className={`mt-5 w-full rounded-full py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition ${
+                      registeredEventIdSet.has(Number(event.id))
+                        ? "cursor-not-allowed bg-[#7ba8a3]"
+                        : "bg-[#0e8f84] hover:bg-[#0d7a6e]"
+                    }`}
                   >
-                    Register
+                    {registeredEventIdSet.has(Number(event.id)) ? "Registered" : "Register"}
                   </button>
                 </div>
               </div>
@@ -409,9 +495,14 @@ function DashboardPage() {
                   </div>
                   <button
                     onClick={() => handleRegisterClick(event)}
-                    className="mt-5 rounded-full bg-[#0e8f84] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]"
+                    disabled={registeredEventIdSet.has(Number(event.id))}
+                    className={`mt-5 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition ${
+                      registeredEventIdSet.has(Number(event.id))
+                        ? "cursor-not-allowed bg-[#7ba8a3]"
+                        : "bg-[#0e8f84] hover:bg-[#0d7a6e]"
+                    }`}
                   >
-                    Register
+                    {registeredEventIdSet.has(Number(event.id)) ? "Registered" : "Register"}
                   </button>
                 </div>
               </div>
