@@ -5,9 +5,19 @@ const API_BASE = `http://${API_HOST}:4000/api`;
 
 const DEPARTMENTS = ["All", "CSE", "Civil", "MBA", "Agriculture"];
 const EVENT_TYPES = ["All", "Coding", "Marketing", "Public Speaking", "Cultural", "Workshop", "Seminar"];
+const EXTRA_PROFILE_KEY = "cc_profile_extra";
 
 function getFallbackEventImage() {
   return "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80";
+}
+
+function readExtraProfile() {
+  try {
+    const raw = localStorage.getItem(EXTRA_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_error) {
+    return {};
+  }
 }
 
 function DashboardPage() {
@@ -168,6 +178,11 @@ function DashboardPage() {
     return `${first} ${last}`.trim() || fallback;
   }, [user.firstName, user.lastName, user.username]);
 
+  const profileImage = useMemo(() => {
+    const extra = readExtraProfile();
+    return String(extra.profileImage || "").trim();
+  }, []);
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) {
@@ -272,10 +287,18 @@ function DashboardPage() {
                 onClick={() => setIsProfileMenuOpen(prev => !prev)}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#c9d8e7] bg-white text-[#1f3149] shadow-sm transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
               >
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M20 21a8 8 0 0 0-16 0" />
-                  <circle cx="12" cy="8" r="4" />
-                </svg>
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile picture"
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                    <circle cx="12" cy="8" r="4" />
+                  </svg>
+                )}
               </button>
               {isProfileMenuOpen && (
                 <div className="absolute right-[88px] top-12 z-50 w-64 rounded-2xl border border-[#d5e2ef] bg-white p-2 shadow-[0_20px_34px_rgba(30,53,79,0.16)]" role="menu">
@@ -378,40 +401,6 @@ function DashboardPage() {
             List View
           </button>
         </div>
-
-        <section className="mb-10 rounded-[1.4rem] border border-[#d7e5f1] bg-white/80 p-5 shadow-[0_12px_26px_rgba(30,53,79,0.08)]">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[#16263a] md:text-xl">My Registrations</h2>
-              <p className="mt-1 text-sm text-[#5a6f86]">Track all events you have already booked.</p>
-            </div>
-            <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-semibold text-[#224d7a]">
-              {isLoadingMyRegistrations ? "Loading..." : `${myRegistrations.length} registered`}
-            </span>
-          </div>
-
-          {isLoadingMyRegistrations ? (
-            <p className="text-sm text-[#5f748a]">Loading your registrations...</p>
-          ) : myRegistrations.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-5 text-sm text-[#5f748a]">
-              You have not registered for any events yet.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {myRegistrations.slice(0, 6).map((registration) => (
-                <article key={registration.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
-                  <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{registration.eventTitle}</h3>
-                  <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-[#5f748a]">
-                    <p>Date: {registration.date}</p>
-                    <p>Time: {registration.time}</p>
-                    <p>Venue: {registration.location}</p>
-                    <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
 
         {filteredEvents.length === 0 ? (
           <div className="text-center py-12">

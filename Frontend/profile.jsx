@@ -1,4 +1,4 @@
-const { useEffect, useState } = React;
+const { useEffect, useRef, useState } = React;
 
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_BASE = `http://${API_HOST}:4000/api`;
@@ -23,7 +23,8 @@ function getInitialProfileForm() {
     department: "",
     yearOrSection: "",
     interests: "",
-    bio: ""
+    bio: "",
+    profileImage: ""
   };
 }
 
@@ -46,6 +47,7 @@ function ProfilePage() {
   const [profileForm, setProfileForm] = useState(getInitialProfileForm);
   const [myRegistrations, setMyRegistrations] = useState([]);
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
+  const profileImageInputRef = useRef(null);
 
   if (!token) {
     window.location.href = "signin.html";
@@ -107,7 +109,8 @@ function ProfilePage() {
       department: extra.department || "",
       yearOrSection: extra.yearOrSection || "",
       interests: extra.interests || "",
-      bio: extra.bio || ""
+      bio: extra.bio || "",
+      profileImage: extra.profileImage || ""
     });
   }, [user.firstName, user.lastName, user.username, user.email]);
 
@@ -214,7 +217,8 @@ function ProfilePage() {
       department: extra.department || "",
       yearOrSection: extra.yearOrSection || "",
       interests: extra.interests || "",
-      bio: extra.bio || ""
+      bio: extra.bio || "",
+      profileImage: extra.profileImage || ""
     });
     setSaveMessage("");
     setEditingAbout(false);
@@ -236,7 +240,8 @@ function ProfilePage() {
       department: extra.department || "",
       yearOrSection: extra.yearOrSection || "",
       interests: extra.interests || "",
-      bio: extra.bio || ""
+      bio: extra.bio || "",
+      profileImage: extra.profileImage || ""
     });
     setSaveMessage("");
     setEditingPersonal(false);
@@ -258,7 +263,8 @@ function ProfilePage() {
       department: extra.department || "",
       yearOrSection: extra.yearOrSection || "",
       interests: extra.interests || "",
-      bio: extra.bio || ""
+      bio: extra.bio || "",
+      profileImage: extra.profileImage || ""
     });
     setSaveMessage("");
     setEditingAcademic(false);
@@ -280,10 +286,61 @@ function ProfilePage() {
       department: extra.department || "",
       yearOrSection: extra.yearOrSection || "",
       interests: extra.interests || "",
-      bio: extra.bio || ""
+      bio: extra.bio || "",
+      profileImage: extra.profileImage || ""
     });
     setSaveMessage("");
     setEditingInterests(false);
+  }
+
+  function handleProfileImageClick() {
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.click();
+    }
+  }
+
+  function handleProfileImageChange(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSaveMessage("Please choose an image file for your profile picture.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setSaveMessage("Profile picture must be under 2MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const encoded = typeof reader.result === "string" ? reader.result : "";
+      if (!encoded.startsWith("data:image/")) {
+        setSaveMessage("Could not process the selected image.");
+        return;
+      }
+
+      setProfileForm((prev) => ({ ...prev, profileImage: encoded }));
+
+      const extra = readExtraProfile();
+      const nextExtra = {
+        ...extra,
+        profileImage: encoded
+      };
+      localStorage.setItem(EXTRA_PROFILE_KEY, JSON.stringify(nextExtra));
+      setSaveMessage("Profile picture updated for this device.");
+    };
+
+    reader.onerror = () => {
+      setSaveMessage("Failed to read the selected image.");
+    };
+
+    reader.readAsDataURL(file);
   }
 
   function handleSaveProfile(event) {
@@ -312,7 +369,8 @@ function ProfilePage() {
       department: profileForm.department.trim(),
       yearOrSection: profileForm.yearOrSection.trim(),
       interests: profileForm.interests,
-      bio: profileForm.bio.trim()
+      bio: profileForm.bio.trim(),
+      profileImage: profileForm.profileImage
     };
 
     setUser(updatedUser);
@@ -343,7 +401,7 @@ function ProfilePage() {
 
         <div className="relative mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-4 py-5 md:px-8">
           <div className="flex items-center gap-4">
-            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-10 w-auto md:h-11" />
+            <img src="campus-connect-logo.svg" alt="Campus Connect" className="h-14 w-auto md:h-15" />
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -390,11 +448,20 @@ function ProfilePage() {
               </div>
               <div className="my-4 h-px w-full bg-[#e6eef6]" />
               <div className="relative mb-4 mt-4">
-                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0e8f84,#36cfc0)] text-5xl font-bold text-white shadow-[0_10px_30px_rgba(22,159,145,0.22)]">
-                  {profileInitial}
-                </div>
+                {profileForm.profileImage ? (
+                  <img
+                    src={profileForm.profileImage}
+                    alt="Profile"
+                    className="h-32 w-32 rounded-full object-cover shadow-[0_10px_30px_rgba(22,159,145,0.22)]"
+                  />
+                ) : (
+                  <div className="flex h-32 w-32 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0e8f84,#36cfc0)] text-5xl font-bold text-white shadow-[0_10px_30px_rgba(22,159,145,0.22)]">
+                    {profileInitial}
+                  </div>
+                )}
                 <button
                   type="button"
+                  onClick={handleProfileImageClick}
                   className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-[#169f91] shadow-lg transition hover:bg-[#0e8f84] hover:scale-110"
                   title="Edit profile photo"
                 >
@@ -402,6 +469,13 @@ function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </button>
+                <input
+                  ref={profileImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="hidden"
+                />
               </div>
               <div>
                 <h2 className="font-display text-3xl font-bold text-[#16263a]">{displayName}</h2>
