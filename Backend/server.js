@@ -76,7 +76,7 @@ app.use(
       }
       callback(null, false);
     },
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH"],
     credentials: false
   })
 );
@@ -178,6 +178,13 @@ function isValidDataImage(value) {
 
   // Keep inline poster payloads bounded so event POST requests remain lightweight.
   return Buffer.byteLength(value, "utf8") <= 2 * 1024 * 1024;
+}
+
+function normalizeApprovalStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+  if (status === "approved") return "Approved";
+  if (status === "rejected") return "Rejected";
+  return "Pending";
 }
 
 function constantTimeEqual(a, b) {
@@ -294,6 +301,7 @@ async function initializeDatabase() {
       location TEXT NOT NULL,
       description TEXT NOT NULL,
       poster_image TEXT,
+      approval_status TEXT NOT NULL DEFAULT 'Pending',
       organizer_id INTEGER NOT NULL,
       created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL,
@@ -301,10 +309,36 @@ async function initializeDatabase() {
     )
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS event_registrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      year_or_designation TEXT,
+      notes TEXT,
+      pricing_label TEXT NOT NULL DEFAULT 'Free Entry',
+      created_at INTEGER NOT NULL,
+      UNIQUE(event_id, user_id),
+      FOREIGN KEY (event_id) REFERENCES events(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  await run(`CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON event_registrations(event_id)`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON event_registrations(user_id)`);
+
   const eventColumns = await all(`PRAGMA table_info(events)`);
   const hasPosterImage = eventColumns.some((column) => column.name === "poster_image");
+  const hasApprovalStatus = eventColumns.some((column) => column.name === "approval_status");
   if (!hasPosterImage) {
     await run(`ALTER TABLE events ADD COLUMN poster_image TEXT`);
+  }
+  if (!hasApprovalStatus) {
+    await run(`ALTER TABLE events ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'Pending'`);
+    await run(`UPDATE events SET approval_status = 'Pending' WHERE approval_status IS NULL OR approval_status = ''`);
   }
 }
 
@@ -353,9 +387,9 @@ app.post("/api/events", authLimiter, async (req, res) => {
     }
 
     await run(
-      `INSERT INTO events (title, event_type, department, date, time, location, description, poster_image, organizer_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, eventType, department, date, time, location, description, posterImage || null, user.id, user.username, Date.now()]
+      `INSERT INTO events (title, event_type, department, date, time, location, description, poster_image, approval_status, organizer_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, eventType, department, date, time, location, description, posterImage || null, "Pending", user.id, user.username, Date.now()]
     );
 
     return res.status(201).json({ message: "Event created successfully." });
@@ -368,9 +402,9 @@ app.post("/api/events", authLimiter, async (req, res) => {
 app.get("/api/events", async (req, res) => {
   try {
     const { department = "", eventType = "" } = req.query;
-    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, poster_image AS posterImage, poster_image AS image, created_by AS createdBy, created_at AS createdAt FROM events`;
+    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, poster_image AS posterImage, poster_image AS image, approval_status AS approvalStatus, created_by AS createdBy, created_at AS createdAt FROM events`;
     const params = [];
-    const conditions = [];
+    const conditions = [`approval_status = 'Approved'`];
 
     if (department && department !== "All") {
       conditions.push(`department = ?`);
@@ -382,9 +416,7 @@ app.get("/api/events", async (req, res) => {
       params.push(eventType);
     }
 
-    if (conditions.length > 0) {
-      sql += ` WHERE ${conditions.join(" AND ")}`;
-    }
+    sql += ` WHERE ${conditions.join(" AND ")}`;
 
     sql += ` ORDER BY created_at DESC`;
 
@@ -394,6 +426,288 @@ app.get("/api/events", async (req, res) => {
   } catch (error) {
     console.error("List events error:", error);
     return jsonError(res, 500, "Could not fetch events right now.");
+  }
+});
+
+app.post("/api/events/:id/register", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, account_type, first_name, last_name, email, year_or_designation
+       FROM users
+       WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user) {
+      return jsonError(res, 401, "User not found.");
+    }
+
+    if (user.account_type !== "Student") {
+      return jsonError(res, 403, "Only student accounts can register for events.");
+    }
+
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const event = await get(
+      `SELECT id, title, approval_status AS approvalStatus
+       FROM events
+       WHERE id = ?`,
+      [eventId]
+    );
+
+    if (!event || event.approvalStatus !== "Approved") {
+      return jsonError(res, 404, "Event not found or unavailable.");
+    }
+
+    const fullName = String(req.body.name || `${user.first_name || ""} ${user.last_name || ""}`).trim();
+    const email = String(req.body.email || user.email || "").trim().toLowerCase();
+    const phone = String(req.body.phone || "").trim();
+    const yearOrDesignation = String(req.body.year || user.year_or_designation || "").trim();
+    const notes = String(req.body.notes || "").trim();
+    const pricingLabel = String(req.body.pricingLabel || "Free Entry").trim() || "Free Entry";
+
+    if (!fullName || !email || !phone) {
+      return jsonError(res, 400, "Name, email, and phone are required.");
+    }
+
+    if (!isValidEmail(email)) {
+      return jsonError(res, 400, "Please provide a valid email address.");
+    }
+
+    if (!/^\+?[0-9\-\s]{7,15}$/.test(phone)) {
+      return jsonError(res, 400, "Please provide a valid phone number.");
+    }
+
+    const existing = await get(
+      `SELECT id FROM event_registrations WHERE event_id = ? AND user_id = ?`,
+      [eventId, user.id]
+    );
+
+    if (existing) {
+      return jsonError(res, 409, "You are already registered for this event.");
+    }
+
+    const insertResult = await run(
+      `INSERT INTO event_registrations (
+        event_id, user_id, full_name, email, phone, year_or_designation, notes, pricing_label, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [eventId, user.id, fullName, email, phone, yearOrDesignation, notes, pricingLabel, Date.now()]
+    );
+
+    return res.status(201).json({
+      message: "Registration successful.",
+      registration: {
+        id: insertResult.lastID,
+        eventId,
+        eventTitle: event.title
+      }
+    });
+  } catch (error) {
+    console.error("Event registration error:", error);
+    return jsonError(res, 500, "Could not complete registration right now.");
+  }
+});
+
+app.get("/api/organizer/events", async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(`SELECT id, account_type FROM users WHERE id = ?`, [session.userId]);
+    if (!user || user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only organizers can access this data.");
+    }
+
+    const events = await all(
+      `SELECT
+          e.id,
+          e.title,
+          e.event_type AS eventType,
+          e.department,
+          e.date,
+          e.time,
+          e.location,
+          e.description,
+          e.poster_image AS posterImage,
+          e.poster_image AS image,
+          e.approval_status AS approvalStatus,
+          e.created_by AS createdBy,
+          e.created_at AS createdAt,
+          COUNT(r.id) AS registrationCount
+       FROM events e
+       LEFT JOIN event_registrations r ON r.event_id = e.id
+       WHERE e.organizer_id = ?
+       GROUP BY e.id
+       ORDER BY e.created_at DESC`,
+      [user.id]
+    );
+
+    return res.json({ events });
+  } catch (error) {
+    console.error("Organizer events error:", error);
+    return jsonError(res, 500, "Could not fetch organizer events right now.");
+  }
+});
+
+app.get("/api/organizer/events/:id/registrations", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(`SELECT id, account_type FROM users WHERE id = ?`, [session.userId]);
+    if (!user || user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only organizers can access this data.");
+    }
+
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const event = await get(
+      `SELECT id, title FROM events WHERE id = ? AND organizer_id = ?`,
+      [eventId, user.id]
+    );
+
+    if (!event) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    const registrations = await all(
+      `SELECT
+          id,
+          event_id AS eventId,
+          user_id AS userId,
+          full_name AS fullName,
+          email,
+          phone,
+          year_or_designation AS yearOrDesignation,
+          notes,
+          pricing_label AS pricingLabel,
+          created_at AS createdAt
+       FROM event_registrations
+       WHERE event_id = ?
+       ORDER BY created_at DESC`,
+      [eventId]
+    );
+
+    return res.json({ event: { id: event.id, title: event.title }, count: registrations.length, registrations });
+  } catch (error) {
+    console.error("Organizer registrations error:", error);
+    return jsonError(res, 500, "Could not fetch event registrations right now.");
+  }
+});
+
+app.get("/api/admin/events", adminLimiter, requireDeveloper, async (req, res) => {
+  try {
+    const { status = "Pending" } = req.query;
+    const normalizedStatus = normalizeApprovalStatus(status);
+    const params = [];
+    let sql = `SELECT
+      e.id,
+      e.title,
+      e.event_type AS eventType,
+      e.department,
+      e.date,
+      e.time,
+      e.location,
+      e.description,
+      e.poster_image AS posterImage,
+      e.poster_image AS image,
+      e.approval_status AS approvalStatus,
+      e.organizer_id AS organizerId,
+      e.created_by AS createdBy,
+      e.created_at AS createdAt,
+      COUNT(r.id) AS registrationCount
+      FROM events e
+      LEFT JOIN event_registrations r ON r.event_id = e.id`;
+
+    if (normalizedStatus !== "Pending" || String(status || "").trim().toLowerCase() === "pending") {
+      sql += ` WHERE e.approval_status = ?`;
+      params.push(normalizedStatus);
+    }
+
+    sql += ` GROUP BY e.id ORDER BY e.created_at DESC`;
+
+    const events = await all(sql, params);
+    return res.json({ count: events.length, events });
+  } catch (error) {
+    console.error("Admin events error:", error);
+    return jsonError(res, 500, "Could not fetch events right now.");
+  }
+});
+
+app.get("/api/admin/registrations", adminLimiter, requireDeveloper, async (req, res) => {
+  try {
+    const requestedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.min(500, Math.floor(requestedLimit)))
+      : 100;
+
+    const registrations = await all(
+      `SELECT
+          r.id,
+          r.event_id AS eventId,
+          r.user_id AS userId,
+          r.full_name AS fullName,
+          r.email,
+          r.phone,
+          r.year_or_designation AS yearOrDesignation,
+          r.notes,
+          r.pricing_label AS pricingLabel,
+          r.created_at AS createdAt,
+          e.title AS eventTitle,
+          e.department,
+          e.date,
+          e.time,
+          e.created_by AS organizerUsername
+       FROM event_registrations r
+       INNER JOIN events e ON e.id = r.event_id
+       ORDER BY r.created_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+
+    return res.json({ count: registrations.length, registrations });
+  } catch (error) {
+    console.error("Admin registrations error:", error);
+    return jsonError(res, 500, "Could not fetch registrations right now.");
+  }
+});
+
+app.patch("/api/admin/events/:id/approve", adminLimiter, requireDeveloper, async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const event = await get(`SELECT id, approval_status AS approvalStatus FROM events WHERE id = ?`, [eventId]);
+    if (!event) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    if (event.approvalStatus === "Approved") {
+      return res.json({ message: "Event is already approved." });
+    }
+
+    await run(`UPDATE events SET approval_status = 'Approved' WHERE id = ?`, [eventId]);
+    return res.json({ message: "Event approved successfully." });
+  } catch (error) {
+    console.error("Approve event error:", error);
+    return jsonError(res, 500, "Could not approve event right now.");
   }
 });
 
@@ -424,6 +738,7 @@ app.delete("/api/events/:id", authLimiter, async (req, res) => {
       return jsonError(res, 403, "You can only delete your own events.");
     }
 
+    await run(`DELETE FROM event_registrations WHERE event_id = ?`, [eventId]);
     await run(`DELETE FROM events WHERE id = ?`, [eventId]);
     return res.json({ message: "Event deleted successfully." });
   } catch (error) {

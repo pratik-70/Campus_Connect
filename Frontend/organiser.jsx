@@ -19,6 +19,9 @@ function OrganizerDashboardPage() {
   const [message, setMessage] = useState({ type: "idle", text: "" });
   const [events, setEvents] = useState([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [expandedEventId, setExpandedEventId] = useState(null);
+  const [loadingRegistrationsFor, setLoadingRegistrationsFor] = useState(null);
+  const [registrationsByEvent, setRegistrationsByEvent] = useState({});
   const [formData, setFormData] = useState({
     title: "",
     eventType: "Workshop",
@@ -85,7 +88,11 @@ function OrganizerDashboardPage() {
     async function loadEvents() {
       try {
         setIsLoadingEvents(true);
-        const response = await fetch(`${API_BASE}/events`);
+        const response = await fetch(`${API_BASE}/organizer/events`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         const data = await response.json();
 
         if (mounted && Array.isArray(data.events)) {
@@ -212,7 +219,11 @@ function OrganizerDashboardPage() {
 
       setMessage({ type: "success", text: "Event created successfully." });
 
-      const reloadResponse = await fetch(`${API_BASE}/events`);
+      const reloadResponse = await fetch(`${API_BASE}/organizer/events`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const reloadData = await reloadResponse.json();
       if (Array.isArray(reloadData.events)) {
         setEvents(reloadData.events);
@@ -221,6 +232,42 @@ function OrganizerDashboardPage() {
       setMessage({ type: "error", text: "Network error while creating event." });
     } finally {
       setIsBusy(false);
+    }
+  }
+
+  async function toggleEventRegistrations(eventId) {
+    if (expandedEventId === eventId) {
+      setExpandedEventId(null);
+      return;
+    }
+
+    setExpandedEventId(eventId);
+    if (registrationsByEvent[eventId]) {
+      return;
+    }
+
+    try {
+      setLoadingRegistrationsFor(eventId);
+      const response = await fetch(`${API_BASE}/organizer/events/${eventId}/registrations`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage({ type: "error", text: data.message || "Could not load registrations for this event." });
+        return;
+      }
+
+      setRegistrationsByEvent((prev) => ({
+        ...prev,
+        [eventId]: Array.isArray(data.registrations) ? data.registrations : []
+      }));
+    } catch (_error) {
+      setMessage({ type: "error", text: "Network issue while loading event registrations." });
+    } finally {
+      setLoadingRegistrationsFor(null);
     }
   }
 
@@ -414,9 +461,22 @@ function OrganizerDashboardPage() {
                   <article key={event.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
-                      <span className="rounded-full bg-[#ebf3ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
-                        {event.eventType}
-                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-[#ebf3ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
+                          {event.eventType}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            event.approvalStatus === "Approved"
+                              ? "bg-[#e8f8f4] text-[#0a7e68]"
+                              : event.approvalStatus === "Rejected"
+                              ? "bg-[#fdeef1] text-[#9e2d4f]"
+                              : "bg-[#fff4e8] text-[#91551f]"
+                          }`}
+                        >
+                          {event.approvalStatus || "Pending"}
+                        </span>
+                      </div>
                     </div>
                     <p className="mt-2 text-sm text-[#4e637a]">{event.description}</p>
                     {(event.posterImage || event.image) && (
@@ -432,6 +492,41 @@ function OrganizerDashboardPage() {
                       <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
                       <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
                     </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-semibold text-[#32597f]">
+                        Registrations: {Number(event.registrationCount || 0)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleEventRegistrations(event.id)}
+                        className="rounded-lg border border-[#c9d8e7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                      >
+                        {expandedEventId === event.id ? "Hide Registrations" : "View Registrations"}
+                      </button>
+                    </div>
+
+                    {expandedEventId === event.id && (
+                      <div className="mt-3 rounded-lg border border-[#d8e6f2] bg-[#f7fbff] p-3">
+                        {loadingRegistrationsFor === event.id ? (
+                          <p className="text-xs text-[#5f748a]">Loading registrations...</p>
+                        ) : (registrationsByEvent[event.id] || []).length === 0 ? (
+                          <p className="text-xs text-[#5f748a]">No participants registered yet.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(registrationsByEvent[event.id] || []).map((registration) => (
+                              <div key={registration.id} className="rounded-md border border-[#dce8f3] bg-white p-2.5 text-xs text-[#4e637a]">
+                                <p className="font-semibold text-[#1f3149]">{registration.fullName}</p>
+                                <p>Email: {registration.email}</p>
+                                <p>Phone: {registration.phone}</p>
+                                <p>Year: {registration.yearOrDesignation || "-"}</p>
+                                <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>

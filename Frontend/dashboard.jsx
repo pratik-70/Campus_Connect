@@ -158,6 +158,19 @@ function DashboardPage() {
     }
   }
 
+  function handleRegisterClick(eventItem) {
+    if (!eventItem) return;
+
+    try {
+      sessionStorage.setItem("cc_selected_event", JSON.stringify(eventItem));
+    } catch (_error) {
+      console.error("Could not store selected event:", _error);
+    }
+
+    const eventId = eventItem.id ? `?id=${encodeURIComponent(eventItem.id)}` : "";
+    window.location.href = `event-register.html${eventId}`;
+  }
+
   function signOut() {
     localStorage.removeItem("cc_token");
     localStorage.removeItem("cc_user");
@@ -355,7 +368,10 @@ function DashboardPage() {
                     <p className="flex items-center gap-2">🕐 <span>{event.time}</span></p>
                     <p className="flex items-center gap-2">📍 <span>{event.location}</span></p>
                   </div>
-                  <button className="mt-5 w-full rounded-full bg-[#0e8f84] py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]">
+                  <button
+                    onClick={() => handleRegisterClick(event)}
+                    className="mt-5 w-full rounded-full bg-[#0e8f84] py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]"
+                  >
                     Register
                   </button>
                 </div>
@@ -391,7 +407,10 @@ function DashboardPage() {
                     <p className="flex items-center gap-2">🕐 <span>{event.time}</span></p>
                     <p className="flex items-center gap-2">📍 <span>{event.location}</span></p>
                   </div>
-                  <button className="mt-5 rounded-full bg-[#0e8f84] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]">
+                  <button
+                    onClick={() => handleRegisterClick(event)}
+                    className="mt-5 rounded-full bg-[#0e8f84] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]"
+                  >
                     Register
                   </button>
                 </div>
