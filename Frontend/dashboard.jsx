@@ -5,9 +5,19 @@ const API_BASE = `http://${API_HOST}:4000/api`;
 
 const DEPARTMENTS = ["All", "CSE", "Civil", "MBA", "Agriculture"];
 const EVENT_TYPES = ["All", "Coding", "Marketing", "Public Speaking", "Cultural", "Workshop", "Seminar"];
+const EXTRA_PROFILE_KEY = "cc_profile_extra";
 
 function getFallbackEventImage() {
   return "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80";
+}
+
+function readExtraProfile() {
+  try {
+    const raw = localStorage.getItem(EXTRA_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_error) {
+    return {};
+  }
 }
 
 function DashboardPage() {
@@ -22,7 +32,9 @@ function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState([]);
+  const [myRegistrations, setMyRegistrations] = useState([]);
   const [isReloadingEvents, setIsReloadingEvents] = useState(false);
+  const [isLoadingMyRegistrations, setIsLoadingMyRegistrations] = useState(false);
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedEventType, setSelectedEventType] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
@@ -103,6 +115,46 @@ function DashboardPage() {
   }, [selectedDept, selectedEventType]);
 
   useEffect(() => {
+    let mounted = true;
+
+    async function loadMyRegistrations() {
+      try {
+        setIsLoadingMyRegistrations(true);
+        const response = await fetch(`${API_BASE}/me/registrations`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await response.json().catch(() => ({ registrations: [] }));
+
+        if (!response.ok) {
+          if (mounted) {
+            setMyRegistrations([]);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setMyRegistrations(Array.isArray(data.registrations) ? data.registrations : []);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setMyRegistrations([]);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingMyRegistrations(false);
+        }
+      }
+    }
+
+    loadMyRegistrations();
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
@@ -125,6 +177,11 @@ function DashboardPage() {
     const fallback = (user.username || "student").trim();
     return `${first} ${last}`.trim() || fallback;
   }, [user.firstName, user.lastName, user.username]);
+
+  const profileImage = useMemo(() => {
+    const extra = readExtraProfile();
+    return String(extra.profileImage || "").trim();
+  }, []);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -158,10 +215,21 @@ function DashboardPage() {
     }
   }
 
-  function signOut() {
-    localStorage.removeItem("cc_token");
-    localStorage.removeItem("cc_user");
-    window.location.href = "signin.html";
+  const registeredEventIdSet = useMemo(() => {
+    return new Set(myRegistrations.map((registration) => Number(registration.eventId)).filter(Number.isFinite));
+  }, [myRegistrations]);
+
+  function handleRegisterClick(eventItem) {
+    if (!eventItem) return;
+
+    try {
+      sessionStorage.setItem("cc_selected_event", JSON.stringify(eventItem));
+    } catch (_error) {
+      console.error("Could not store selected event:", _error);
+    }
+
+    const eventId = eventItem.id ? `?id=${encodeURIComponent(eventItem.id)}` : "";
+    window.location.href = `event-register.html${eventId}`;
   }
 
   function signOut() {
@@ -213,10 +281,18 @@ function DashboardPage() {
                 onClick={() => setIsProfileMenuOpen(prev => !prev)}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#c9d8e7] bg-white text-[#1f3149] shadow-sm transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
               >
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M20 21a8 8 0 0 0-16 0" />
-                  <circle cx="12" cy="8" r="4" />
-                </svg>
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile picture"
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                    <circle cx="12" cy="8" r="4" />
+                  </svg>
+                )}
               </button>
               {isProfileMenuOpen && (
                 <div className="absolute right-[88px] top-12 z-50 w-64 rounded-2xl border border-[#d5e2ef] bg-white p-2 shadow-[0_20px_34px_rgba(30,53,79,0.16)]" role="menu">
@@ -271,7 +347,7 @@ function DashboardPage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#16263a] md:text-xl">Event Categories</h2>
-              <p className="mt-1 text-sm text-[#5a6f86]">Filter by the event type you want to browse.</p>
+              {/* <p className="mt-1 text-sm text-[#5a6f86]">Filter by the event type you want to browse.</p> */}
             </div>
             <button
               onClick={reloadEvents}
@@ -319,6 +395,7 @@ function DashboardPage() {
             List View
           </button>
         </div>
+
         {filteredEvents.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#5a6f86] text-lg">No events found for the selected filters.</p>
@@ -331,7 +408,7 @@ function DashboardPage() {
                 className="group overflow-hidden rounded-[1.75rem] border border-[#d8e5f0] bg-white shadow-[0_12px_28px_rgba(30,53,79,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(30,53,79,0.12)]"
               >
                 <img
-                  src={event.image || getFallbackEventImage()}
+                  src={event.posterImage || event.image || getFallbackEventImage()}
                   alt={event.title}
                   className="h-52 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                   onError={(e) => {
@@ -355,8 +432,16 @@ function DashboardPage() {
                     <p className="flex items-center gap-2">🕐 <span>{event.time}</span></p>
                     <p className="flex items-center gap-2">📍 <span>{event.location}</span></p>
                   </div>
-                  <button className="mt-5 w-full rounded-full bg-[#0e8f84] py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]">
-                    Register
+                  <button
+                    onClick={() => handleRegisterClick(event)}
+                    disabled={registeredEventIdSet.has(Number(event.id))}
+                    className={`mt-5 w-full rounded-full py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition ${
+                      registeredEventIdSet.has(Number(event.id))
+                        ? "cursor-not-allowed bg-[#7ba8a3]"
+                        : "bg-[#0e8f84] hover:bg-[#0d7a6e]"
+                    }`}
+                  >
+                    {registeredEventIdSet.has(Number(event.id)) ? "Registered" : "Register"}
                   </button>
                 </div>
               </div>
@@ -367,7 +452,7 @@ function DashboardPage() {
             {filteredEvents.map(event => (
               <div key={event.id} className="flex gap-5 rounded-[1.5rem] border border-[#d8e5f0] bg-white p-5 shadow-[0_12px_28px_rgba(30,53,79,0.08)] transition hover:shadow-[0_16px_34px_rgba(30,53,79,0.12)]">
                 <img
-                  src={event.image || getFallbackEventImage()}
+                  src={event.posterImage || event.image || getFallbackEventImage()}
                   alt={event.title}
                   className="h-36 w-36 flex-shrink-0 rounded-2xl object-cover"
                   onError={(e) => {
@@ -391,8 +476,16 @@ function DashboardPage() {
                     <p className="flex items-center gap-2">🕐 <span>{event.time}</span></p>
                     <p className="flex items-center gap-2">📍 <span>{event.location}</span></p>
                   </div>
-                  <button className="mt-5 rounded-full bg-[#0e8f84] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition hover:bg-[#0d7a6e]">
-                    Register
+                  <button
+                    onClick={() => handleRegisterClick(event)}
+                    disabled={registeredEventIdSet.has(Number(event.id))}
+                    className={`mt-5 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(14,143,132,0.2)] transition ${
+                      registeredEventIdSet.has(Number(event.id))
+                        ? "cursor-not-allowed bg-[#7ba8a3]"
+                        : "bg-[#0e8f84] hover:bg-[#0d7a6e]"
+                    }`}
+                  >
+                    {registeredEventIdSet.has(Number(event.id)) ? "Registered" : "Register"}
                   </button>
                 </div>
               </div>

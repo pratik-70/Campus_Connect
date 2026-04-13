@@ -5,6 +5,7 @@ const API_BASE = `http://${API_HOST}:4000/api`;
 
 function OrganizerDashboardPage() {
   const token = localStorage.getItem("cc_token");
+  const MAX_POSTER_FILE_SIZE = 1500 * 1024;
   const [user, setUser] = useState(() => {
     const rawUser = localStorage.getItem("cc_user");
     try {
@@ -17,7 +18,11 @@ function OrganizerDashboardPage() {
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState({ type: "idle", text: "" });
   const [events, setEvents] = useState([]);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [expandedEventId, setExpandedEventId] = useState(null);
+  const [loadingRegistrationsFor, setLoadingRegistrationsFor] = useState(null);
+  const [registrationsByEvent, setRegistrationsByEvent] = useState({});
   const [formData, setFormData] = useState({
     title: "",
     eventType: "Workshop",
@@ -25,7 +30,9 @@ function OrganizerDashboardPage() {
     date: "",
     time: "",
     location: "",
-    description: ""
+    description: "",
+    eventPrice: "Free",
+    posterImage: ""
   });
 
   if (!token) {
@@ -83,7 +90,11 @@ function OrganizerDashboardPage() {
     async function loadEvents() {
       try {
         setIsLoadingEvents(true);
-        const response = await fetch(`${API_BASE}/events`);
+        const response = await fetch(`${API_BASE}/organizer/events`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         const data = await response.json();
 
         if (mounted && Array.isArray(data.events)) {
@@ -107,6 +118,44 @@ function OrganizerDashboardPage() {
   function handleInput(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handlePosterUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      setFormData((prev) => ({ ...prev, posterImage: "" }));
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Poster must be an image file (jpg, png, webp, etc.)." });
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_POSTER_FILE_SIZE) {
+      setMessage({ type: "error", text: "Poster file must be under 1.5MB." });
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const encoded = typeof reader.result === "string" ? reader.result : "";
+      if (!encoded.startsWith("data:image/")) {
+        setMessage({ type: "error", text: "Could not process selected image." });
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, posterImage: encoded }));
+      setMessage({ type: "success", text: "Poster selected and ready to publish." });
+    };
+
+    reader.onerror = () => {
+      setMessage({ type: "error", text: "Failed to read image file." });
+    };
+
+    reader.readAsDataURL(file);
   }
 
   function handleLogout() {
@@ -134,8 +183,12 @@ function OrganizerDashboardPage() {
       setIsBusy(true);
       setMessage({ type: "idle", text: "" });
 
-      const response = await fetch(`${API_BASE}/events`, {
-        method: "POST",
+      const isEditing = Number.isInteger(editingEventId);
+      const endpoint = isEditing ? `${API_BASE}/organizer/events/${editingEventId}` : `${API_BASE}/events`;
+      const method = isEditing ? "PATCH" : "POST";
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
@@ -147,7 +200,9 @@ function OrganizerDashboardPage() {
           date: formData.date,
           time: formData.time,
           location: formData.location.trim(),
-          description: formData.description.trim()
+          description: formData.description.trim(),
+          eventPrice: formData.eventPrice.trim() || "Free",
+          posterImage: formData.posterImage
         })
       });
 
@@ -165,20 +220,98 @@ function OrganizerDashboardPage() {
         date: "",
         time: "",
         location: "",
-        description: ""
+        description: "",
+        eventPrice: "Free",
+        posterImage: ""
       });
+      setEditingEventId(null);
 
-      setMessage({ type: "success", text: "Event created successfully." });
+      setMessage({ type: "success", text: isEditing ? "Event updated successfully." : "Event created successfully." });
 
-      const reloadResponse = await fetch(`${API_BASE}/events`);
+      const reloadResponse = await fetch(`${API_BASE}/organizer/events`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const reloadData = await reloadResponse.json();
       if (Array.isArray(reloadData.events)) {
         setEvents(reloadData.events);
       }
     } catch (_error) {
-      setMessage({ type: "error", text: "Network error while creating event." });
+      setMessage({ type: "error", text: "Network error while saving event." });
     } finally {
       setIsBusy(false);
+    }
+  }
+
+  function startEditingEvent(eventItem) {
+    if (!eventItem) return;
+
+    setEditingEventId(Number(eventItem.id));
+    setFormData({
+      title: String(eventItem.title || ""),
+      eventType: String(eventItem.eventType || "Workshop"),
+      department: String(eventItem.department || ""),
+      date: String(eventItem.date || ""),
+      time: String(eventItem.time || ""),
+      location: String(eventItem.location || ""),
+      description: String(eventItem.description || ""),
+      eventPrice: String(eventItem.price || "Free"),
+      posterImage: String(eventItem.posterImage || eventItem.image || "")
+    });
+    setMessage({ type: "idle", text: "Editing mode enabled. Update details and click Save Changes." });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEditingEvent() {
+    setEditingEventId(null);
+    setFormData({
+      title: "",
+      eventType: "Workshop",
+      department: "",
+      date: "",
+      time: "",
+      location: "",
+      description: "",
+      eventPrice: "Free",
+      posterImage: ""
+    });
+    setMessage({ type: "idle", text: "" });
+  }
+
+  async function toggleEventRegistrations(eventId) {
+    if (expandedEventId === eventId) {
+      setExpandedEventId(null);
+      return;
+    }
+
+    setExpandedEventId(eventId);
+    if (registrationsByEvent[eventId]) {
+      return;
+    }
+
+    try {
+      setLoadingRegistrationsFor(eventId);
+      const response = await fetch(`${API_BASE}/organizer/events/${eventId}/registrations`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage({ type: "error", text: data.message || "Could not load registrations for this event." });
+        return;
+      }
+
+      setRegistrationsByEvent((prev) => ({
+        ...prev,
+        [eventId]: Array.isArray(data.registrations) ? data.registrations : []
+      }));
+    } catch (_error) {
+      setMessage({ type: "error", text: "Network issue while loading event registrations." });
+    } finally {
+      setLoadingRegistrationsFor(null);
     }
   }
 
@@ -231,8 +364,12 @@ function OrganizerDashboardPage() {
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1.25fr]">
           <section className="rounded-2xl border border-[#d2dfeb] bg-white/80 p-4 md:p-5">
-            <h2 className="font-display text-xl font-semibold text-[#1a2a3d]">Add New Event</h2>
-            <p className="mt-1 text-sm text-[#5f748a]">Fill in event details and publish it to your organizer list.</p>
+            <h2 className="font-display text-xl font-semibold text-[#1a2a3d]">{editingEventId ? "Edit Event" : "Add New Event"}</h2>
+            <p className="mt-1 text-sm text-[#5f748a]">
+              {editingEventId
+                ? "Update details and save changes for this event."
+                : "Fill in event details and publish it to your organizer list."}
+            </p>
 
             <form onSubmit={handleCreateEvent} className="mt-4 space-y-3">
               <label className="block text-sm text-[#24344a]">
@@ -325,13 +462,54 @@ function OrganizerDashboardPage() {
                 />
               </label>
 
-              <button
-                type="submit"
-                disabled={isBusy}
-                className="w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isBusy ? "Creating..." : "Add Event"}
-              </button>
+              <label className="block text-sm text-[#24344a]">
+                Event price
+                <input
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                  type="text"
+                  name="eventPrice"
+                  value={formData.eventPrice}
+                  onChange={handleInput}
+                  placeholder="Free or 499"
+                />
+                <span className="mt-2 block text-xs text-[#5f748a]">Use Free for no entry fee, or enter an amount.</span>
+              </label>
+
+              <label className="block text-sm text-[#24344a]">
+                Event poster (optional)
+                <input
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-sm text-[#1a2a3d] outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-[#eef6ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#2a4f77] hover:file:bg-[#e3f0ff] focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePosterUpload}
+                />
+                <span className="mt-2 block text-xs text-[#5f748a]">Maximum size: 1.5MB</span>
+              </label>
+
+              {formData.posterImage && (
+                <div className="overflow-hidden rounded-xl border border-[#d2dfeb] bg-[#f8fbff] p-2">
+                  <img src={formData.posterImage} alt="Event poster preview" className="h-40 w-full rounded-lg object-cover" />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isBusy}
+                  className="w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isBusy ? (editingEventId ? "Saving..." : "Creating...") : editingEventId ? "Save Changes" : "Add Event"}
+                </button>
+                {editingEventId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditingEvent}
+                    className="rounded-xl border border-[#c9d8e7] bg-white px-4 py-3 font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
 
               <p className={`min-h-[1.25rem] text-sm ${messageColor}`}>{message.text}</p>
             </form>
@@ -355,17 +533,80 @@ function OrganizerDashboardPage() {
                   <article key={event.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
-                      <span className="rounded-full bg-[#ebf3ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
-                        {event.eventType}
-                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-[#ebf3ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
+                          {event.eventType}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            event.approvalStatus === "Approved"
+                              ? "bg-[#e8f8f4] text-[#0a7e68]"
+                              : event.approvalStatus === "Rejected"
+                              ? "bg-[#fdeef1] text-[#9e2d4f]"
+                              : "bg-[#fff4e8] text-[#91551f]"
+                          }`}
+                        >
+                          {event.approvalStatus || "Pending"}
+                        </span>
+                      </div>
                     </div>
                     <p className="mt-2 text-sm text-[#4e637a]">{event.description}</p>
+                    {(event.posterImage || event.image) && (
+                      <img
+                        src={event.posterImage || event.image}
+                        alt={`${event.title} poster`}
+                        className="mt-3 h-36 w-full rounded-lg border border-[#d9e6f2] object-cover"
+                      />
+                    )}
                     <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-[#5f748a] sm:grid-cols-2">
                       <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
                       <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
                       <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
                       <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Price:</span> {event.price || "Free"}</p>
                     </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-semibold text-[#32597f]">
+                        Registrations: {Number(event.registrationCount || 0)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEditingEvent(event)}
+                        className="rounded-lg border border-[#c9d8e7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                      >
+                        Edit Event
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleEventRegistrations(event.id)}
+                        className="rounded-lg border border-[#c9d8e7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                      >
+                        {expandedEventId === event.id ? "Hide Registrations" : "View Registrations"}
+                      </button>
+                    </div>
+
+                    {expandedEventId === event.id && (
+                      <div className="mt-3 rounded-lg border border-[#d8e6f2] bg-[#f7fbff] p-3">
+                        {loadingRegistrationsFor === event.id ? (
+                          <p className="text-xs text-[#5f748a]">Loading registrations...</p>
+                        ) : (registrationsByEvent[event.id] || []).length === 0 ? (
+                          <p className="text-xs text-[#5f748a]">No participants registered yet.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(registrationsByEvent[event.id] || []).map((registration) => (
+                              <div key={registration.id} className="rounded-md border border-[#dce8f3] bg-white p-2.5 text-xs text-[#4e637a]">
+                                <p className="font-semibold text-[#1f3149]">{registration.fullName}</p>
+                                <p>Email: {registration.email}</p>
+                                <p>Phone: {registration.phone}</p>
+                                <p>Year: {registration.yearOrDesignation || "-"}</p>
+                                <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
