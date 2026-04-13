@@ -55,7 +55,27 @@ function isLoopbackOrigin(origin) {
   try {
     const parsed = new URL(origin);
     const hostname = (parsed.hostname || "").toLowerCase();
-    return hostname === "localhost" || hostname === "127.0.0.1";
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch (_error) {
+    return false;
+  }
+}
+
+function isPrivateNetworkOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    const hostname = (parsed.hostname || "").toLowerCase();
+
+    if (/^10\./.test(hostname)) return true;
+    if (/^192\.168\./.test(hostname)) return true;
+
+    const match172 = hostname.match(/^172\.(\d{1,3})\./);
+    if (match172) {
+      const secondOctet = Number(match172[1]);
+      if (secondOctet >= 16 && secondOctet <= 31) return true;
+    }
+
+    return false;
   } catch (_error) {
     return false;
   }
@@ -69,7 +89,8 @@ app.use(
         !origin ||
         origin === "null" ||
         allowedOrigins.includes(origin) ||
-        isLoopbackOrigin(origin)
+        isLoopbackOrigin(origin) ||
+        isPrivateNetworkOrigin(origin)
       ) {
         callback(null, true);
         return;
@@ -300,8 +321,11 @@ async function initializeDatabase() {
       time TEXT NOT NULL,
       location TEXT NOT NULL,
       description TEXT NOT NULL,
+      event_price TEXT NOT NULL DEFAULT 'Free',
       poster_image TEXT,
       approval_status TEXT NOT NULL DEFAULT 'Pending',
+      edit_change_summary TEXT,
+      edit_requested_at INTEGER,
       organizer_id INTEGER NOT NULL,
       created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL,
@@ -333,12 +357,25 @@ async function initializeDatabase() {
   const eventColumns = await all(`PRAGMA table_info(events)`);
   const hasPosterImage = eventColumns.some((column) => column.name === "poster_image");
   const hasApprovalStatus = eventColumns.some((column) => column.name === "approval_status");
+  const hasEventPrice = eventColumns.some((column) => column.name === "event_price");
+  const hasEditChangeSummary = eventColumns.some((column) => column.name === "edit_change_summary");
+  const hasEditRequestedAt = eventColumns.some((column) => column.name === "edit_requested_at");
   if (!hasPosterImage) {
     await run(`ALTER TABLE events ADD COLUMN poster_image TEXT`);
   }
   if (!hasApprovalStatus) {
     await run(`ALTER TABLE events ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'Pending'`);
     await run(`UPDATE events SET approval_status = 'Pending' WHERE approval_status IS NULL OR approval_status = ''`);
+  }
+  if (!hasEventPrice) {
+    await run(`ALTER TABLE events ADD COLUMN event_price TEXT NOT NULL DEFAULT 'Free'`);
+    await run(`UPDATE events SET event_price = 'Free' WHERE event_price IS NULL OR event_price = ''`);
+  }
+  if (!hasEditChangeSummary) {
+    await run(`ALTER TABLE events ADD COLUMN edit_change_summary TEXT`);
+  }
+  if (!hasEditRequestedAt) {
+    await run(`ALTER TABLE events ADD COLUMN edit_requested_at INTEGER`);
   }
 }
 
@@ -376,20 +413,22 @@ app.post("/api/events", authLimiter, async (req, res) => {
       return jsonError(res, 403, "Only organizers can create events.");
     }
 
-    const { title, eventType, department, date, time, location, description, posterImage = "" } = req.body;
+    const { title, eventType, department, date, time, location, description, eventPrice = "Free", posterImage = "" } = req.body;
 
     if (!title || !eventType || !department || !date || !time || !location || !description) {
       return jsonError(res, 400, "Missing required event fields.");
     }
+
+    const normalizedEventPrice = String(eventPrice || "Free").trim() || "Free";
 
     if (!isValidDataImage(posterImage)) {
       return jsonError(res, 400, "Poster image must be a valid image upload under 2MB.");
     }
 
     await run(
-      `INSERT INTO events (title, event_type, department, date, time, location, description, poster_image, approval_status, organizer_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, eventType, department, date, time, location, description, posterImage || null, "Pending", user.id, user.username, Date.now()]
+      `INSERT INTO events (title, event_type, department, date, time, location, description, event_price, poster_image, approval_status, organizer_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, eventType, department, date, time, location, description, normalizedEventPrice, posterImage || null, "Pending", user.id, user.username, Date.now()]
     );
 
     return res.status(201).json({ message: "Event created successfully." });
@@ -399,10 +438,129 @@ app.post("/api/events", authLimiter, async (req, res) => {
   }
 });
 
+app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(
+      `SELECT id, account_type FROM users WHERE id = ?`,
+      [session.userId]
+    );
+
+    if (!user || user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only organizers can edit events.");
+    }
+
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const {
+      title,
+      eventType,
+      department,
+      date,
+      time,
+      location,
+      description,
+      eventPrice = "Free",
+      posterImage = ""
+    } = req.body;
+
+    if (!title || !eventType || !department || !date || !time || !location || !description) {
+      return jsonError(res, 400, "Missing required event fields.");
+    }
+
+    if (!isValidDataImage(posterImage)) {
+      return jsonError(res, 400, "Poster image must be a valid image upload under 2MB.");
+    }
+
+    const ownedEvent = await get(
+      `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, poster_image AS posterImage
+       FROM events WHERE id = ? AND organizer_id = ?`,
+      [eventId, user.id]
+    );
+
+    if (!ownedEvent) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    const normalizedEventPrice = String(eventPrice || "Free").trim() || "Free";
+    const normalizedPoster = posterImage || null;
+
+    const changes = [];
+    const comparisons = [
+      ["Title", String(ownedEvent.title || ""), String(title || "")],
+      ["Event Type", String(ownedEvent.eventType || ""), String(eventType || "")],
+      ["Department", String(ownedEvent.department || ""), String(department || "")],
+      ["Date", String(ownedEvent.date || ""), String(date || "")],
+      ["Time", String(ownedEvent.time || ""), String(time || "")],
+      ["Location", String(ownedEvent.location || ""), String(location || "")],
+      ["Description", String(ownedEvent.description || ""), String(description || "")],
+      ["Price", String(ownedEvent.price || "Free"), String(normalizedEventPrice || "Free")]
+    ];
+
+    for (const [field, previousValue, nextValue] of comparisons) {
+      if (previousValue !== nextValue) {
+        changes.push({ field, from: previousValue, to: nextValue });
+      }
+    }
+
+    const previousPoster = String(ownedEvent.posterImage || "").trim();
+    const nextPoster = String(normalizedPoster || "").trim();
+    if (previousPoster !== nextPoster) {
+      changes.push({
+        field: "Poster Image",
+        from: previousPoster ? "Uploaded" : "None",
+        to: nextPoster ? "Uploaded" : "None"
+      });
+    }
+
+    if (!changes.length) {
+      return jsonError(res, 400, "No changes detected to submit for approval.");
+    }
+
+    const editChangeSummary = JSON.stringify({
+      requestedAt: Date.now(),
+      changes
+    });
+
+    await run(
+      `UPDATE events
+       SET title = ?, event_type = ?, department = ?, date = ?, time = ?, location = ?, description = ?, event_price = ?, poster_image = ?, approval_status = 'Pending', edit_change_summary = ?, edit_requested_at = ?
+       WHERE id = ? AND organizer_id = ?`,
+      [
+        title,
+        eventType,
+        department,
+        date,
+        time,
+        location,
+        description,
+        normalizedEventPrice,
+        normalizedPoster,
+        editChangeSummary,
+        Date.now(),
+        eventId,
+        user.id
+      ]
+    );
+
+    return res.json({ message: "Event updated successfully. Status moved to Pending for review." });
+  } catch (error) {
+    console.error("Update organizer event error:", error);
+    return jsonError(res, 500, "Could not update event right now.");
+  }
+});
+
 app.get("/api/events", async (req, res) => {
   try {
     const { department = "", eventType = "" } = req.query;
-    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, poster_image AS posterImage, poster_image AS image, approval_status AS approvalStatus, created_by AS createdBy, created_at AS createdAt FROM events`;
+    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, poster_image AS posterImage, poster_image AS image, approval_status AS approvalStatus, created_by AS createdBy, created_at AS createdAt FROM events`;
     const params = [];
     const conditions = [`approval_status = 'Approved'`];
 
@@ -596,6 +754,7 @@ app.get("/api/organizer/events", async (req, res) => {
           e.approval_status AS approvalStatus,
           e.created_by AS createdBy,
           e.created_at AS createdAt,
+           e.event_price AS price,
           COUNT(r.id) AS registrationCount
        FROM events e
        LEFT JOIN event_registrations r ON r.event_id = e.id
@@ -677,9 +836,12 @@ app.get("/api/admin/events", adminLimiter, requireDeveloper, async (req, res) =>
       e.time,
       e.location,
       e.description,
+      e.event_price AS price,
       e.poster_image AS posterImage,
       e.poster_image AS image,
       e.approval_status AS approvalStatus,
+      e.edit_change_summary AS editChangeSummary,
+      e.edit_requested_at AS editRequestedAt,
       e.organizer_id AS organizerId,
       e.created_by AS createdBy,
       e.created_at AS createdAt,
@@ -756,7 +918,7 @@ app.patch("/api/admin/events/:id/approve", adminLimiter, requireDeveloper, async
       return res.json({ message: "Event is already approved." });
     }
 
-    await run(`UPDATE events SET approval_status = 'Approved' WHERE id = ?`, [eventId]);
+    await run(`UPDATE events SET approval_status = 'Approved', edit_change_summary = NULL, edit_requested_at = NULL WHERE id = ?`, [eventId]);
     return res.json({ message: "Event approved successfully." });
   } catch (error) {
     console.error("Approve event error:", error);
@@ -850,7 +1012,6 @@ app.get("/api/admin/users", adminLimiter, requireDeveloper, async (_req, res) =>
     return jsonError(res, 500, "Could not fetch users right now.");
   }
 });
-
 app.post("/api/auth/otp/send", otpLimiter, async (req, res) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();

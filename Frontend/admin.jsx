@@ -10,6 +10,22 @@ function formatDate(timestamp) {
   return dt.toLocaleString();
 }
 
+function parseEditChanges(summary) {
+  if (!summary) return [];
+  try {
+    const parsed = JSON.parse(summary);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    if (parsed && Array.isArray(parsed.changes)) {
+      return parsed.changes;
+    }
+    return [];
+  } catch (_error) {
+    return [];
+  }
+}
+
 function exportAsCsv(rows) {
   if (!rows.length) return;
 
@@ -363,6 +379,10 @@ function AdminPortalPage({ token, onLogout }) {
               <div className="space-y-3">
                 {pendingEvents.map((event) => (
                   <article key={event.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
+                    {(() => {
+                      const eventChanges = parseEditChanges(event.editChangeSummary);
+                      return (
+                        <>
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
@@ -380,6 +400,19 @@ function AdminPortalPage({ token, onLogout }) {
                       <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
                     </div>
 
+                    {eventChanges.length > 0 && (
+                      <div className="mt-3 rounded-lg border border-[#d7e5f1] bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#315a8d]">Organizer requested changes</p>
+                        <div className="mt-2 space-y-1.5 text-xs text-[#4e637a]">
+                          {eventChanges.map((change, index) => (
+                            <p key={`${event.id}-change-${index}`}>
+                              <span className="font-semibold text-[#2c465f]">{change.field}:</span> {change.from || "-"} -> {change.to || "-"}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <button
                         type="button"
@@ -390,6 +423,9 @@ function AdminPortalPage({ token, onLogout }) {
                         {approvingEventId === event.id ? "Approving..." : "Approve Event"}
                       </button>
                     </div>
+                        </>
+                      );
+                    })()}
                   </article>
                 ))}
               </div>

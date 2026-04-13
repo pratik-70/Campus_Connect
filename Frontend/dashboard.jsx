@@ -238,12 +238,6 @@ function DashboardPage() {
     window.location.href = "signin.html";
   }
 
-  function signOut() {
-    localStorage.removeItem("cc_token");
-    localStorage.removeItem("cc_user");
-    window.location.href = "signin.html";
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[linear-gradient(140deg,#f9fcff,#e9f4ff)] p-3 md:p-6">
@@ -353,7 +347,7 @@ function DashboardPage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-[#16263a] md:text-xl">Event Categories</h2>
-              <p className="mt-1 text-sm text-[#5a6f86]">Filter by the event type you want to browse.</p>
+              {/* <p className="mt-1 text-sm text-[#5a6f86]">Filter by the event type you want to browse.</p> */}
             </div>
             <button
               onClick={reloadEvents}

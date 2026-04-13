@@ -18,6 +18,7 @@ function OrganizerDashboardPage() {
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState({ type: "idle", text: "" });
   const [events, setEvents] = useState([]);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [loadingRegistrationsFor, setLoadingRegistrationsFor] = useState(null);
@@ -30,6 +31,7 @@ function OrganizerDashboardPage() {
     time: "",
     location: "",
     description: "",
+    eventPrice: "Free",
     posterImage: ""
   });
 
@@ -181,8 +183,12 @@ function OrganizerDashboardPage() {
       setIsBusy(true);
       setMessage({ type: "idle", text: "" });
 
-      const response = await fetch(`${API_BASE}/events`, {
-        method: "POST",
+      const isEditing = Number.isInteger(editingEventId);
+      const endpoint = isEditing ? `${API_BASE}/organizer/events/${editingEventId}` : `${API_BASE}/events`;
+      const method = isEditing ? "PATCH" : "POST";
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
@@ -195,6 +201,7 @@ function OrganizerDashboardPage() {
           time: formData.time,
           location: formData.location.trim(),
           description: formData.description.trim(),
+          eventPrice: formData.eventPrice.trim() || "Free",
           posterImage: formData.posterImage
         })
       });
@@ -214,10 +221,12 @@ function OrganizerDashboardPage() {
         time: "",
         location: "",
         description: "",
+        eventPrice: "Free",
         posterImage: ""
       });
+      setEditingEventId(null);
 
-      setMessage({ type: "success", text: "Event created successfully." });
+      setMessage({ type: "success", text: isEditing ? "Event updated successfully." : "Event created successfully." });
 
       const reloadResponse = await fetch(`${API_BASE}/organizer/events`, {
         headers: {
@@ -229,10 +238,45 @@ function OrganizerDashboardPage() {
         setEvents(reloadData.events);
       }
     } catch (_error) {
-      setMessage({ type: "error", text: "Network error while creating event." });
+      setMessage({ type: "error", text: "Network error while saving event." });
     } finally {
       setIsBusy(false);
     }
+  }
+
+  function startEditingEvent(eventItem) {
+    if (!eventItem) return;
+
+    setEditingEventId(Number(eventItem.id));
+    setFormData({
+      title: String(eventItem.title || ""),
+      eventType: String(eventItem.eventType || "Workshop"),
+      department: String(eventItem.department || ""),
+      date: String(eventItem.date || ""),
+      time: String(eventItem.time || ""),
+      location: String(eventItem.location || ""),
+      description: String(eventItem.description || ""),
+      eventPrice: String(eventItem.price || "Free"),
+      posterImage: String(eventItem.posterImage || eventItem.image || "")
+    });
+    setMessage({ type: "idle", text: "Editing mode enabled. Update details and click Save Changes." });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEditingEvent() {
+    setEditingEventId(null);
+    setFormData({
+      title: "",
+      eventType: "Workshop",
+      department: "",
+      date: "",
+      time: "",
+      location: "",
+      description: "",
+      eventPrice: "Free",
+      posterImage: ""
+    });
+    setMessage({ type: "idle", text: "" });
   }
 
   async function toggleEventRegistrations(eventId) {
@@ -320,8 +364,12 @@ function OrganizerDashboardPage() {
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1.25fr]">
           <section className="rounded-2xl border border-[#d2dfeb] bg-white/80 p-4 md:p-5">
-            <h2 className="font-display text-xl font-semibold text-[#1a2a3d]">Add New Event</h2>
-            <p className="mt-1 text-sm text-[#5f748a]">Fill in event details and publish it to your organizer list.</p>
+            <h2 className="font-display text-xl font-semibold text-[#1a2a3d]">{editingEventId ? "Edit Event" : "Add New Event"}</h2>
+            <p className="mt-1 text-sm text-[#5f748a]">
+              {editingEventId
+                ? "Update details and save changes for this event."
+                : "Fill in event details and publish it to your organizer list."}
+            </p>
 
             <form onSubmit={handleCreateEvent} className="mt-4 space-y-3">
               <label className="block text-sm text-[#24344a]">
@@ -415,6 +463,19 @@ function OrganizerDashboardPage() {
               </label>
 
               <label className="block text-sm text-[#24344a]">
+                Event price
+                <input
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                  type="text"
+                  name="eventPrice"
+                  value={formData.eventPrice}
+                  onChange={handleInput}
+                  placeholder="Free or 499"
+                />
+                <span className="mt-2 block text-xs text-[#5f748a]">Use Free for no entry fee, or enter an amount.</span>
+              </label>
+
+              <label className="block text-sm text-[#24344a]">
                 Event poster (optional)
                 <input
                   className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-sm text-[#1a2a3d] outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-[#eef6ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#2a4f77] hover:file:bg-[#e3f0ff] focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
@@ -431,13 +492,24 @@ function OrganizerDashboardPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isBusy}
-                className="w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isBusy ? "Creating..." : "Add Event"}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isBusy}
+                  className="w-full rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-3 font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isBusy ? (editingEventId ? "Saving..." : "Creating...") : editingEventId ? "Save Changes" : "Add Event"}
+                </button>
+                {editingEventId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditingEvent}
+                    className="rounded-xl border border-[#c9d8e7] bg-white px-4 py-3 font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
 
               <p className={`min-h-[1.25rem] text-sm ${messageColor}`}>{message.text}</p>
             </form>
@@ -491,12 +563,20 @@ function OrganizerDashboardPage() {
                       <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
                       <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
                       <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Price:</span> {event.price || "Free"}</p>
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-semibold text-[#32597f]">
                         Registrations: {Number(event.registrationCount || 0)}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => startEditingEvent(event)}
+                        className="rounded-lg border border-[#c9d8e7] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f3149] transition hover:border-[#0ea59699] hover:text-[#0e8f84]"
+                      >
+                        Edit Event
+                      </button>
                       <button
                         type="button"
                         onClick={() => toggleEventRegistrations(event.id)}
