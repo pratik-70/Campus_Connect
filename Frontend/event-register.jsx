@@ -171,12 +171,28 @@ function EventRegistrationPage() {
   }, [eventData, token]);
 
   const pricingLabel = useMemo(() => formatPricingLabel(eventData), [eventData]);
+  const eventMaxTeamSize = useMemo(() => Math.min(6, Math.max(1, Number(eventData?.maxTeamSize) || 6)), [eventData]);
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const currentTeamSize = Math.min(eventMaxTeamSize, Math.max(1, Number(prev.teamSize) || 1));
+      const memberCount = Math.max(0, currentTeamSize - 1);
+      const currentMembers = Array.isArray(prev.additionalMembers) ? prev.additionalMembers : [];
+      const resizedMembers = Array.from({ length: memberCount }, (_, index) => currentMembers[index] || createEmptyMember());
+
+      return {
+        ...prev,
+        teamSize: String(currentTeamSize),
+        additionalMembers: resizedMembers
+      };
+    });
+  }, [eventMaxTeamSize]);
 
   function handleInput(event) {
     const { name, value } = event.target;
 
     if (name === "teamSize") {
-      const parsedTeamSize = Math.min(6, Math.max(1, Number(value) || 1));
+      const parsedTeamSize = Math.min(eventMaxTeamSize, Math.max(1, Number(value) || 1));
       const memberCount = Math.max(0, parsedTeamSize - 1);
 
       setFormData((prev) => {
@@ -221,7 +237,7 @@ function EventRegistrationPage() {
       return;
     }
 
-    const teamSizeValue = Math.min(6, Math.max(1, Number(formData.teamSize) || 1));
+    const teamSizeValue = Math.min(eventMaxTeamSize, Math.max(1, Number(formData.teamSize) || 1));
     const additionalMembers = (formData.additionalMembers || []).slice(0, Math.max(0, teamSizeValue - 1));
 
     if (teamSizeValue > 1) {
@@ -427,13 +443,13 @@ function EventRegistrationPage() {
                 onChange={handleInput}
                 className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
               >
-                <option value="1">1 (Solo)</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
+                {Array.from({ length: eventMaxTeamSize }, (_, index) => index + 1).map((size) => (
+                  <option key={size} value={String(size)}>
+                    {size === 1 ? "1 (Solo)" : String(size)}
+                  </option>
+                ))}
               </select>
+              <span className="mt-2 block text-xs text-[#5f748a]">Maximum allowed team size for this event: {eventMaxTeamSize}</span>
             </label>
 
             {Number(formData.teamSize) > 1 &&

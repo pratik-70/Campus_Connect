@@ -34,6 +34,7 @@ function OrganizerDashboardPage() {
     location: "",
     description: "",
     eventPrice: "Free",
+    maxTeamSize: "6",
     posterImage: ""
   });
 
@@ -204,6 +205,7 @@ function OrganizerDashboardPage() {
           location: formData.location.trim(),
           description: formData.description.trim(),
           eventPrice: formData.eventPrice.trim() || "Free",
+          maxTeamSize: Math.min(6, Math.max(1, Number(formData.maxTeamSize) || 1)),
           posterImage: formData.posterImage
         })
       });
@@ -224,6 +226,7 @@ function OrganizerDashboardPage() {
         location: "",
         description: "",
         eventPrice: "Free",
+        maxTeamSize: "6",
         posterImage: ""
       });
       setEditingEventId(null);
@@ -259,6 +262,7 @@ function OrganizerDashboardPage() {
       location: String(eventItem.location || ""),
       description: String(eventItem.description || ""),
       eventPrice: String(eventItem.price || "Free"),
+      maxTeamSize: String(eventItem.maxTeamSize || 6),
       posterImage: String(eventItem.posterImage || eventItem.image || "")
     });
     setMessage({ type: "idle", text: "Editing mode enabled. Update details and click Save Changes." });
@@ -276,6 +280,7 @@ function OrganizerDashboardPage() {
       location: "",
       description: "",
       eventPrice: "Free",
+      maxTeamSize: "6",
       posterImage: ""
     });
     setMessage({ type: "idle", text: "" });
@@ -521,6 +526,24 @@ function OrganizerDashboardPage() {
               </label>
 
               <label className="block text-sm text-[#24344a]">
+                Max team size
+                <select
+                  className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                  name="maxTeamSize"
+                  value={formData.maxTeamSize}
+                  onChange={handleInput}
+                >
+                  <option value="1">1 (Solo only)</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+                <span className="mt-2 block text-xs text-[#5f748a]">Students can choose team size up to this limit during registration.</span>
+              </label>
+
+              <label className="block text-sm text-[#24344a]">
                 Event poster (optional)
                 <input
                   className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-sm text-[#1a2a3d] outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-[#eef6ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#2a4f77] hover:file:bg-[#e3f0ff] focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
@@ -609,6 +632,7 @@ function OrganizerDashboardPage() {
                       <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
                       <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
                       <p><span className="font-semibold text-[#3d536c]">Price:</span> {event.price || "Free"}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Max Team:</span> {event.maxTeamSize || 6}</p>
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">

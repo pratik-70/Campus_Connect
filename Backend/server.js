@@ -208,6 +208,12 @@ function normalizeApprovalStatus(value) {
   return "Pending";
 }
 
+function normalizeMaxTeamSize(value, fallback = 6) {
+  const parsed = Number(value);
+  const base = Number.isFinite(parsed) ? Math.floor(parsed) : fallback;
+  return Math.min(6, Math.max(1, base));
+}
+
 function constantTimeEqual(a, b) {
   const left = Buffer.from(String(a || ""));
   const right = Buffer.from(String(b || ""));
@@ -322,6 +328,7 @@ async function initializeDatabase() {
       location TEXT NOT NULL,
       description TEXT NOT NULL,
       event_price TEXT NOT NULL DEFAULT 'Free',
+      max_team_size INTEGER NOT NULL DEFAULT 6,
       poster_image TEXT,
       approval_status TEXT NOT NULL DEFAULT 'Pending',
       edit_change_summary TEXT,
@@ -362,6 +369,7 @@ async function initializeDatabase() {
   const hasPosterImage = eventColumns.some((column) => column.name === "poster_image");
   const hasApprovalStatus = eventColumns.some((column) => column.name === "approval_status");
   const hasEventPrice = eventColumns.some((column) => column.name === "event_price");
+  const hasMaxTeamSize = eventColumns.some((column) => column.name === "max_team_size");
   const hasEditChangeSummary = eventColumns.some((column) => column.name === "edit_change_summary");
   const hasEditRequestedAt = eventColumns.some((column) => column.name === "edit_requested_at");
   const hasDeleteRequestReason = eventColumns.some((column) => column.name === "delete_request_reason");
@@ -378,6 +386,11 @@ async function initializeDatabase() {
     await run(`ALTER TABLE events ADD COLUMN event_price TEXT NOT NULL DEFAULT 'Free'`);
     await run(`UPDATE events SET event_price = 'Free' WHERE event_price IS NULL OR event_price = ''`);
   }
+  if (!hasMaxTeamSize) {
+    await run(`ALTER TABLE events ADD COLUMN max_team_size INTEGER NOT NULL DEFAULT 6`);
+    await run(`UPDATE events SET max_team_size = 6 WHERE max_team_size IS NULL OR max_team_size < 1`);
+  }
+  await run(`UPDATE events SET max_team_size = 6 WHERE max_team_size > 6`);
   if (!hasEditChangeSummary) {
     await run(`ALTER TABLE events ADD COLUMN edit_change_summary TEXT`);
   }
@@ -429,22 +442,49 @@ app.post("/api/events", authLimiter, async (req, res) => {
       return jsonError(res, 403, "Only organizers can create events.");
     }
 
-    const { title, eventType, department, date, time, location, description, eventPrice = "Free", posterImage = "" } = req.body;
+    const {
+      title,
+      eventType,
+      department,
+      date,
+      time,
+      location,
+      description,
+      eventPrice = "Free",
+      maxTeamSize = 6,
+      posterImage = ""
+    } = req.body;
 
     if (!title || !eventType || !department || !date || !time || !location || !description) {
       return jsonError(res, 400, "Missing required event fields.");
     }
 
     const normalizedEventPrice = String(eventPrice || "Free").trim() || "Free";
+    const normalizedMaxTeamSize = normalizeMaxTeamSize(maxTeamSize, 6);
 
     if (!isValidDataImage(posterImage)) {
       return jsonError(res, 400, "Poster image must be a valid image upload under 2MB.");
     }
 
     await run(
-      `INSERT INTO events (title, event_type, department, date, time, location, description, event_price, poster_image, approval_status, organizer_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, eventType, department, date, time, location, description, normalizedEventPrice, posterImage || null, "Pending", user.id, user.username, Date.now()]
+      `INSERT INTO events (title, event_type, department, date, time, location, description, event_price, max_team_size, poster_image, approval_status, organizer_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title,
+        eventType,
+        department,
+        date,
+        time,
+        location,
+        description,
+        normalizedEventPrice,
+        normalizedMaxTeamSize,
+        posterImage || null,
+        "Pending",
+        user.id,
+        user.username,
+        Date.now()
+      ]
     );
 
     return res.status(201).json({ message: "Event created successfully." });
@@ -484,6 +524,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
       location,
       description,
       eventPrice = "Free",
+      maxTeamSize = 6,
       posterImage = ""
     } = req.body;
 
@@ -496,7 +537,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
     }
 
     const ownedEvent = await get(
-      `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, poster_image AS posterImage
+      `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, max_team_size AS maxTeamSize, poster_image AS posterImage
        FROM events WHERE id = ? AND organizer_id = ?`,
       [eventId, user.id]
     );
@@ -506,6 +547,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
     }
 
     const normalizedEventPrice = String(eventPrice || "Free").trim() || "Free";
+    const normalizedMaxTeamSize = normalizeMaxTeamSize(maxTeamSize, Number(ownedEvent.maxTeamSize) || 6);
     const normalizedPoster = posterImage || null;
 
     const changes = [];
@@ -517,7 +559,8 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
       ["Time", String(ownedEvent.time || ""), String(time || "")],
       ["Location", String(ownedEvent.location || ""), String(location || "")],
       ["Description", String(ownedEvent.description || ""), String(description || "")],
-      ["Price", String(ownedEvent.price || "Free"), String(normalizedEventPrice || "Free")]
+      ["Price", String(ownedEvent.price || "Free"), String(normalizedEventPrice || "Free")],
+      ["Max Team Size", String(ownedEvent.maxTeamSize || 6), String(normalizedMaxTeamSize || 6)]
     ];
 
     for (const [field, previousValue, nextValue] of comparisons) {
@@ -547,7 +590,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
 
     await run(
       `UPDATE events
-       SET title = ?, event_type = ?, department = ?, date = ?, time = ?, location = ?, description = ?, event_price = ?, poster_image = ?, approval_status = 'Pending', edit_change_summary = ?, edit_requested_at = ?
+       SET title = ?, event_type = ?, department = ?, date = ?, time = ?, location = ?, description = ?, event_price = ?, max_team_size = ?, poster_image = ?, approval_status = 'Pending', edit_change_summary = ?, edit_requested_at = ?
        WHERE id = ? AND organizer_id = ?`,
       [
         title,
@@ -558,6 +601,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
         location,
         description,
         normalizedEventPrice,
+        normalizedMaxTeamSize,
         normalizedPoster,
         editChangeSummary,
         Date.now(),
@@ -576,7 +620,7 @@ app.patch("/api/organizer/events/:id", authLimiter, async (req, res) => {
 app.get("/api/events", async (req, res) => {
   try {
     const { department = "", eventType = "" } = req.query;
-    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, poster_image AS posterImage, poster_image AS image, approval_status AS approvalStatus, created_by AS createdBy, created_at AS createdAt FROM events`;
+    let sql = `SELECT id, title, event_type AS eventType, department, date, time, location, description, event_price AS price, max_team_size AS maxTeamSize, poster_image AS posterImage, poster_image AS image, approval_status AS approvalStatus, created_by AS createdBy, created_at AS createdAt FROM events`;
     const params = [];
     const conditions = [`approval_status = 'Approved'`];
 
@@ -631,7 +675,7 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
     }
 
     const event = await get(
-      `SELECT id, title, approval_status AS approvalStatus
+      `SELECT id, title, approval_status AS approvalStatus, max_team_size AS maxTeamSize
        FROM events
        WHERE id = ?`,
       [eventId]
@@ -645,9 +689,12 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
     const email = String(req.body.email || user.email || "").trim().toLowerCase();
     const phone = String(req.body.phone || "").trim();
     const yearOrDesignation = String(req.body.year || user.year_or_designation || "").trim();
+    const teamSize = normalizeMaxTeamSize(req.body.teamSize, 1);
+    const additionalMembers = Array.isArray(req.body.additionalMembers) ? req.body.additionalMembers : [];
     const notes = String(req.body.notes || "").trim();
     const pricingLabel = String(req.body.pricingLabel || "Free Entry").trim() || "Free Entry";
     const paymentPath = String(req.body.paymentPath || "").trim();
+    const eventMaxTeamSize = normalizeMaxTeamSize(event.maxTeamSize, 6);
 
     if (!fullName || !email || !phone) {
       return jsonError(res, 400, "Name, email, and phone are required.");
@@ -659,6 +706,29 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
 
     if (!/^\+?[0-9\-\s]{7,15}$/.test(phone)) {
       return jsonError(res, 400, "Please provide a valid phone number.");
+    }
+
+    if (teamSize > eventMaxTeamSize) {
+      return jsonError(res, 400, `Maximum team size for this event is ${eventMaxTeamSize}.`);
+    }
+
+    if (teamSize > 1) {
+      const expectedMembers = teamSize - 1;
+      const cleanedMembers = additionalMembers
+        .slice(0, expectedMembers)
+        .map((member) => ({
+          name: String(member?.name || "").trim(),
+          regNo: String(member?.regNo || "").trim()
+        }));
+
+      if (cleanedMembers.length < expectedMembers) {
+        return jsonError(res, 400, "Please provide all additional team member details.");
+      }
+
+      const hasMissingMemberField = cleanedMembers.some((member) => !member.name || !member.regNo);
+      if (hasMissingMemberField) {
+        return jsonError(res, 400, "Please provide name and reg no. for all additional team members.");
+      }
     }
 
     // Payment collection is temporarily disabled, so registrations proceed without a payment reference.
@@ -770,6 +840,7 @@ app.get("/api/organizer/events", async (req, res) => {
           e.time,
           e.location,
           e.description,
+          e.max_team_size AS maxTeamSize,
           e.poster_image AS posterImage,
           e.poster_image AS image,
           e.approval_status AS approvalStatus,
@@ -916,6 +987,7 @@ app.get("/api/admin/events", adminLimiter, requireDeveloper, async (req, res) =>
       e.location,
       e.description,
       e.event_price AS price,
+      e.max_team_size AS maxTeamSize,
       e.poster_image AS posterImage,
       e.poster_image AS image,
       e.approval_status AS approvalStatus,
@@ -958,6 +1030,7 @@ app.get("/api/admin/events/deletion-requests", adminLimiter, requireDeveloper, a
           e.location,
           e.description,
           e.event_price AS price,
+          e.max_team_size AS maxTeamSize,
           e.approval_status AS approvalStatus,
           e.delete_request_reason AS deleteRequestReason,
           e.delete_requested_at AS deleteRequestedAt,
