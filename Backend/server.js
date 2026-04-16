@@ -326,6 +326,8 @@ async function initializeDatabase() {
       approval_status TEXT NOT NULL DEFAULT 'Pending',
       edit_change_summary TEXT,
       edit_requested_at INTEGER,
+      delete_request_reason TEXT,
+      delete_requested_at INTEGER,
       organizer_id INTEGER NOT NULL,
       created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL,
@@ -344,6 +346,7 @@ async function initializeDatabase() {
       year_or_designation TEXT,
       notes TEXT,
       pricing_label TEXT NOT NULL DEFAULT 'Free Entry',
+      payment_path TEXT,
       created_at INTEGER NOT NULL,
       UNIQUE(event_id, user_id),
       FOREIGN KEY (event_id) REFERENCES events(id),
@@ -355,11 +358,15 @@ async function initializeDatabase() {
   await run(`CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON event_registrations(user_id)`);
 
   const eventColumns = await all(`PRAGMA table_info(events)`);
+  const registrationColumns = await all(`PRAGMA table_info(event_registrations)`);
   const hasPosterImage = eventColumns.some((column) => column.name === "poster_image");
   const hasApprovalStatus = eventColumns.some((column) => column.name === "approval_status");
   const hasEventPrice = eventColumns.some((column) => column.name === "event_price");
   const hasEditChangeSummary = eventColumns.some((column) => column.name === "edit_change_summary");
   const hasEditRequestedAt = eventColumns.some((column) => column.name === "edit_requested_at");
+  const hasDeleteRequestReason = eventColumns.some((column) => column.name === "delete_request_reason");
+  const hasDeleteRequestedAt = eventColumns.some((column) => column.name === "delete_requested_at");
+  const hasPaymentPath = registrationColumns.some((column) => column.name === "payment_path");
   if (!hasPosterImage) {
     await run(`ALTER TABLE events ADD COLUMN poster_image TEXT`);
   }
@@ -376,6 +383,15 @@ async function initializeDatabase() {
   }
   if (!hasEditRequestedAt) {
     await run(`ALTER TABLE events ADD COLUMN edit_requested_at INTEGER`);
+  }
+  if (!hasDeleteRequestReason) {
+    await run(`ALTER TABLE events ADD COLUMN delete_request_reason TEXT`);
+  }
+  if (!hasDeleteRequestedAt) {
+    await run(`ALTER TABLE events ADD COLUMN delete_requested_at INTEGER`);
+  }
+  if (!hasPaymentPath) {
+    await run(`ALTER TABLE event_registrations ADD COLUMN payment_path TEXT`);
   }
 }
 
@@ -631,6 +647,7 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
     const yearOrDesignation = String(req.body.year || user.year_or_designation || "").trim();
     const notes = String(req.body.notes || "").trim();
     const pricingLabel = String(req.body.pricingLabel || "Free Entry").trim() || "Free Entry";
+    const paymentPath = String(req.body.paymentPath || "").trim();
 
     if (!fullName || !email || !phone) {
       return jsonError(res, 400, "Name, email, and phone are required.");
@@ -644,6 +661,8 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
       return jsonError(res, 400, "Please provide a valid phone number.");
     }
 
+    // Payment collection is temporarily disabled, so registrations proceed without a payment reference.
+
     const existing = await get(
       `SELECT id FROM event_registrations WHERE event_id = ? AND user_id = ?`,
       [eventId, user.id]
@@ -655,9 +674,9 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
 
     const insertResult = await run(
       `INSERT INTO event_registrations (
-        event_id, user_id, full_name, email, phone, year_or_designation, notes, pricing_label, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [eventId, user.id, fullName, email, phone, yearOrDesignation, notes, pricingLabel, Date.now()]
+        event_id, user_id, full_name, email, phone, year_or_designation, notes, pricing_label, payment_path, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [eventId, user.id, fullName, email, phone, yearOrDesignation, notes, pricingLabel, paymentPath || null, Date.now()]
     );
 
     return res.status(201).json({
@@ -665,7 +684,8 @@ app.post("/api/events/:id/register", authLimiter, async (req, res) => {
       registration: {
         id: insertResult.lastID,
         eventId,
-        eventTitle: event.title
+        eventTitle: event.title,
+        paymentPath: paymentPath || null
       }
     });
   } catch (error) {
@@ -704,6 +724,7 @@ app.get("/api/me/registrations", authLimiter, async (req, res) => {
           r.year_or_designation AS yearOrDesignation,
           r.notes,
           r.pricing_label AS pricingLabel,
+          r.payment_path AS paymentPath,
           r.created_at AS createdAt,
           e.title AS eventTitle,
           e.event_type AS eventType,
@@ -752,6 +773,8 @@ app.get("/api/organizer/events", async (req, res) => {
           e.poster_image AS posterImage,
           e.poster_image AS image,
           e.approval_status AS approvalStatus,
+          e.delete_request_reason AS deleteRequestReason,
+          e.delete_requested_at AS deleteRequestedAt,
           e.created_by AS createdBy,
           e.created_at AS createdAt,
            e.event_price AS price,
@@ -768,6 +791,61 @@ app.get("/api/organizer/events", async (req, res) => {
   } catch (error) {
     console.error("Organizer events error:", error);
     return jsonError(res, 500, "Could not fetch organizer events right now.");
+  }
+});
+
+app.post("/api/organizer/events/:id/delete-request", authLimiter, async (req, res) => {
+  try {
+    const session = getSessionPayload(req);
+    if (!session || !session.userId) {
+      return jsonError(res, 401, "Unauthorized.");
+    }
+
+    const user = await get(`SELECT id, account_type FROM users WHERE id = ?`, [session.userId]);
+    if (!user || user.account_type !== "Organizer") {
+      return jsonError(res, 403, "Only organizers can request event deletion.");
+    }
+
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const reason = String(req.body.reason || "").trim();
+    if (reason.length < 10) {
+      return jsonError(res, 400, "Please provide a proper deletion reason (at least 10 characters).");
+    }
+
+    const event = await get(
+      `SELECT id, approval_status AS approvalStatus, delete_requested_at AS deleteRequestedAt
+       FROM events
+       WHERE id = ? AND organizer_id = ?`,
+      [eventId, user.id]
+    );
+
+    if (!event) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    if (event.deleteRequestedAt) {
+      return jsonError(res, 409, "A deletion request is already pending for this event.");
+    }
+
+    if (String(event.approvalStatus || "").toLowerCase() !== "approved") {
+      return jsonError(res, 400, "Only approved events can be submitted for deletion approval.");
+    }
+
+    await run(
+      `UPDATE events
+       SET delete_request_reason = ?, delete_requested_at = ?
+       WHERE id = ? AND organizer_id = ?`,
+      [reason, Date.now(), eventId, user.id]
+    );
+
+    return res.json({ message: "Deletion request submitted for admin approval." });
+  } catch (error) {
+    console.error("Organizer delete request error:", error);
+    return jsonError(res, 500, "Could not submit deletion request right now.");
   }
 });
 
@@ -808,6 +886,7 @@ app.get("/api/organizer/events/:id/registrations", authLimiter, async (req, res)
           year_or_designation AS yearOrDesignation,
           notes,
           pricing_label AS pricingLabel,
+           payment_path AS paymentPath,
           created_at AS createdAt
        FROM event_registrations
        WHERE event_id = ?
@@ -842,6 +921,8 @@ app.get("/api/admin/events", adminLimiter, requireDeveloper, async (req, res) =>
       e.approval_status AS approvalStatus,
       e.edit_change_summary AS editChangeSummary,
       e.edit_requested_at AS editRequestedAt,
+      e.delete_request_reason AS deleteRequestReason,
+      e.delete_requested_at AS deleteRequestedAt,
       e.organizer_id AS organizerId,
       e.created_by AS createdBy,
       e.created_at AS createdAt,
@@ -864,6 +945,39 @@ app.get("/api/admin/events", adminLimiter, requireDeveloper, async (req, res) =>
   }
 });
 
+app.get("/api/admin/events/deletion-requests", adminLimiter, requireDeveloper, async (_req, res) => {
+  try {
+    const events = await all(
+      `SELECT
+          e.id,
+          e.title,
+          e.event_type AS eventType,
+          e.department,
+          e.date,
+          e.time,
+          e.location,
+          e.description,
+          e.event_price AS price,
+          e.approval_status AS approvalStatus,
+          e.delete_request_reason AS deleteRequestReason,
+          e.delete_requested_at AS deleteRequestedAt,
+          e.created_by AS createdBy,
+          e.created_at AS createdAt,
+          COUNT(r.id) AS registrationCount
+       FROM events e
+       LEFT JOIN event_registrations r ON r.event_id = e.id
+       WHERE e.delete_requested_at IS NOT NULL
+       GROUP BY e.id
+       ORDER BY e.delete_requested_at DESC`
+    );
+
+    return res.json({ count: events.length, events });
+  } catch (error) {
+    console.error("Admin deletion requests error:", error);
+    return jsonError(res, 500, "Could not fetch deletion requests right now.");
+  }
+});
+
 app.get("/api/admin/registrations", adminLimiter, requireDeveloper, async (req, res) => {
   try {
     const requestedLimit = Number(req.query.limit);
@@ -882,6 +996,7 @@ app.get("/api/admin/registrations", adminLimiter, requireDeveloper, async (req, 
           r.year_or_designation AS yearOrDesignation,
           r.notes,
           r.pricing_label AS pricingLabel,
+          r.payment_path AS paymentPath,
           r.created_at AS createdAt,
           e.title AS eventTitle,
           e.department,
@@ -926,6 +1041,31 @@ app.patch("/api/admin/events/:id/approve", adminLimiter, requireDeveloper, async
   }
 });
 
+app.patch("/api/admin/events/:id/approve-delete", adminLimiter, requireDeveloper, async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return jsonError(res, 400, "Invalid event id.");
+    }
+
+    const event = await get(`SELECT id, delete_requested_at AS deleteRequestedAt FROM events WHERE id = ?`, [eventId]);
+    if (!event) {
+      return jsonError(res, 404, "Event not found.");
+    }
+
+    if (!event.deleteRequestedAt) {
+      return jsonError(res, 400, "No pending deletion request found for this event.");
+    }
+
+    await run(`DELETE FROM event_registrations WHERE event_id = ?`, [eventId]);
+    await run(`DELETE FROM events WHERE id = ?`, [eventId]);
+    return res.json({ message: "Event deleted after admin approval." });
+  } catch (error) {
+    console.error("Approve delete event error:", error);
+    return jsonError(res, 500, "Could not approve deletion right now.");
+  }
+});
+
 app.delete("/api/events/:id", authLimiter, async (req, res) => {
   try {
     const session = getSessionPayload(req);
@@ -939,7 +1079,7 @@ app.delete("/api/events/:id", authLimiter, async (req, res) => {
     );
 
     if (!user || user.account_type !== "Organizer") {
-      return jsonError(res, 403, "Only the organizer can delete this event.");
+      return jsonError(res, 403, "Only organizers can access this action.");
     }
 
     const eventId = Number(req.params.id);
@@ -953,9 +1093,7 @@ app.delete("/api/events/:id", authLimiter, async (req, res) => {
       return jsonError(res, 403, "You can only delete your own events.");
     }
 
-    await run(`DELETE FROM event_registrations WHERE event_id = ?`, [eventId]);
-    await run(`DELETE FROM events WHERE id = ?`, [eventId]);
-    return res.json({ message: "Event deleted successfully." });
+    return jsonError(res, 403, "Direct deletion is disabled. Submit a deletion request for admin approval.");
   } catch (error) {
     console.error("Delete event error:", error);
     return jsonError(res, 500, "Could not delete event right now.");

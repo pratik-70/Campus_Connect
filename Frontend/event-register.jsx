@@ -32,6 +32,10 @@ function formatPricingLabel(eventData) {
   return normalized;
 }
 
+function createEmptyMember() {
+  return { name: "", regNo: "" };
+}
+
 function EventRegistrationPage() {
   const token = localStorage.getItem("cc_token");
   const [eventData, setEventData] = useState(null);
@@ -49,10 +53,11 @@ function EventRegistrationPage() {
         email: user.email || "",
         phone: "",
         year: "",
-        notes: ""
+        teamSize: "1",
+        additionalMembers: []
       };
     } catch (_error) {
-      return { name: "", email: "", phone: "", year: "", notes: "" };
+      return { name: "", email: "", phone: "", year: "", teamSize: "1", additionalMembers: [] };
     }
   });
 
@@ -169,7 +174,28 @@ function EventRegistrationPage() {
 
   function handleInput(event) {
     const { name, value } = event.target;
+
+    if (name === "teamSize") {
+      const parsedTeamSize = Math.min(6, Math.max(1, Number(value) || 1));
+      const memberCount = Math.max(0, parsedTeamSize - 1);
+
+      setFormData((prev) => {
+        const current = Array.isArray(prev.additionalMembers) ? prev.additionalMembers : [];
+        const resized = Array.from({ length: memberCount }, (_, index) => current[index] || createEmptyMember());
+        return { ...prev, teamSize: String(parsedTeamSize), additionalMembers: resized };
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleAdditionalMemberInput(index, field, value) {
+    setFormData((prev) => {
+      const nextMembers = [...(prev.additionalMembers || [])];
+      nextMembers[index] = { ...(nextMembers[index] || createEmptyMember()), [field]: value };
+      return { ...prev, additionalMembers: nextMembers };
+    });
   }
 
   async function handleSubmit(event) {
@@ -190,6 +216,26 @@ function EventRegistrationPage() {
       return;
     }
 
+    if (!eventData?.id) {
+      setStatus({ type: "error", text: "Event details are missing. Please reload this page." });
+      return;
+    }
+
+    const teamSizeValue = Math.min(6, Math.max(1, Number(formData.teamSize) || 1));
+    const additionalMembers = (formData.additionalMembers || []).slice(0, Math.max(0, teamSizeValue - 1));
+
+    if (teamSizeValue > 1) {
+      const missingDetails = additionalMembers.some((member) => !member?.name?.trim() || !member?.regNo?.trim());
+      if (missingDetails) {
+        setStatus({ type: "error", text: "Please provide name and reg no. for all additional team members." });
+        return;
+      }
+    }
+
+    const teamNotes = additionalMembers
+      .map((member, index) => `Member ${index + 2}: ${member.name.trim()} (Reg No: ${member.regNo.trim()})`)
+      .join(" | ");
+
     try {
       setIsSubmitting(true);
 
@@ -204,7 +250,12 @@ function EventRegistrationPage() {
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           year: formData.year.trim(),
-          notes: formData.notes.trim(),
+          notes: teamNotes,
+          teamSize: teamSizeValue,
+          additionalMembers: additionalMembers.map((member) => ({
+            name: member.name.trim(),
+            regNo: member.regNo.trim()
+          })),
           pricingLabel
         })
       });
@@ -341,7 +392,7 @@ function EventRegistrationPage() {
             </label>
 
             <label className="block text-sm text-[#24344a]">
-              Phone number
+              Phone no.
               <input
                 type="tel"
                 name="phone"
@@ -354,26 +405,59 @@ function EventRegistrationPage() {
 
             <label className="block text-sm text-[#24344a]">
               Year / Designation
-              <input
-                type="text"
+              <select
                 name="year"
                 value={formData.year}
                 onChange={handleInput}
                 className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
-                placeholder="e.g. 2nd Year, CSE"
-              />
+              >
+                <option value="">Select your year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
             </label>
 
             <label className="block text-sm text-[#24344a]">
-              Notes (optional)
-              <textarea
-                name="notes"
-                value={formData.notes}
+              Team size
+              <select
+                name="teamSize"
+                value={formData.teamSize}
                 onChange={handleInput}
-                className="mt-2 min-h-[90px] w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
-                placeholder="Anything the organizer should know"
-              />
+                className="mt-2 w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-3 text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+              >
+                <option value="1">1 (Solo)</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
             </label>
+
+            {Number(formData.teamSize) > 1 &&
+              formData.additionalMembers.map((member, index) => (
+                <div key={`member-${index}`} className="rounded-xl border border-[#dce8f2] bg-[#f9fcff] p-3">
+                  <p className="text-sm font-semibold text-[#24344a]">Member {index + 2} details</p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <input
+                      type="text"
+                      value={member.name}
+                      onChange={(event) => handleAdditionalMemberInput(index, "name", event.target.value)}
+                      className="w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-2.5 text-sm text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                      placeholder="Member name"
+                    />
+                    <input
+                      type="text"
+                      value={member.regNo}
+                      onChange={(event) => handleAdditionalMemberInput(index, "regNo", event.target.value)}
+                      className="w-full rounded-xl border border-[#d2dfeb] bg-white px-3 py-2.5 text-sm text-[#1a2a3d] outline-none transition focus:border-[#0ea596] focus:ring-2 focus:ring-[#0ea59630]"
+                      placeholder="Member reg no."
+                    />
+                  </div>
+                </div>
+              ))}
 
             <button
               type="submit"
@@ -384,7 +468,11 @@ function EventRegistrationPage() {
                   : "bg-[linear-gradient(135deg,#169f91,#36cfc0)] hover:-translate-y-0.5 hover:brightness-105"
               }`}
             >
-              {alreadyRegistered ? "Already Registered" : isSubmitting ? "Submitting..." : "Confirm Registration"}
+              {alreadyRegistered
+                ? "Already Registered"
+                : isSubmitting
+                ? "Submitting..."
+                : "Confirm Registration"}
             </button>
 
             {status.text && (

@@ -167,11 +167,13 @@ function AdminPortalPage({ token, onLogout }) {
   const [eventCount, setEventCount] = useState(0);
   const [registrationCount, setRegistrationCount] = useState(0);
   const [pendingEvents, setPendingEvents] = useState([]);
+  const [pendingDeletionRequests, setPendingDeletionRequests] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
   const [search, setSearch] = useState("");
   const [accountFilter, setAccountFilter] = useState("All");
   const [isBusy, setIsBusy] = useState(false);
   const [approvingEventId, setApprovingEventId] = useState(null);
+  const [approvingDeleteEventId, setApprovingDeleteEventId] = useState(null);
   const [error, setError] = useState("");
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
 
@@ -180,7 +182,7 @@ function AdminPortalPage({ token, onLogout }) {
       setIsBusy(true);
       setError("");
 
-      const [healthRes, usersRes, eventsRes, pendingEventsRes, registrationsRes] = await Promise.all([
+      const [healthRes, usersRes, eventsRes, pendingEventsRes, deletionRequestsRes, registrationsRes] = await Promise.all([
         fetch(`${API_BASE}/health`),
         fetch(`${API_BASE}/admin/users`, {
           headers: {
@@ -189,6 +191,11 @@ function AdminPortalPage({ token, onLogout }) {
         }),
         fetch(`${API_BASE}/events`),
         fetch(`${API_BASE}/admin/events?status=Pending`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        }),
+        fetch(`${API_BASE}/admin/events/deletion-requests`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -208,6 +215,9 @@ function AdminPortalPage({ token, onLogout }) {
 
       const pendingData = await pendingEventsRes.json().catch(() => ({ events: [] }));
       setPendingEvents(Array.isArray(pendingData.events) ? pendingData.events : []);
+
+      const deletionData = await deletionRequestsRes.json().catch(() => ({ events: [] }));
+      setPendingDeletionRequests(Array.isArray(deletionData.events) ? deletionData.events : []);
 
       const registrationsData = await registrationsRes.json().catch(() => ({ registrations: [] }));
       const normalizedRegistrations = Array.isArray(registrationsData.registrations) ? registrationsData.registrations : [];
@@ -259,6 +269,33 @@ function AdminPortalPage({ token, onLogout }) {
       setError("Network issue while approving event.");
     } finally {
       setApprovingEventId(null);
+    }
+  }
+
+  async function approveDeleteEvent(eventId) {
+    try {
+      setApprovingDeleteEventId(eventId);
+      setError("");
+
+      const response = await fetch(`${API_BASE}/admin/events/${eventId}/approve-delete`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.message || "Could not approve event deletion.");
+        return;
+      }
+
+      setPendingDeletionRequests((prev) => prev.filter((event) => event.id !== eventId));
+      await fetchAdminData();
+    } catch (_error) {
+      setError("Network issue while approving event deletion.");
+    } finally {
+      setApprovingDeleteEventId(null);
     }
   }
 
@@ -433,6 +470,53 @@ function AdminPortalPage({ token, onLogout }) {
           </div>
         </section>
 
+        <section className="mt-6 overflow-hidden rounded-2xl border border-[#eed6dc] bg-white">
+          <div className="border-b border-[#f2dfe4] bg-[#fff7f9] px-4 py-3">
+            <h2 className="font-display text-lg font-semibold text-[#8e2e49]">Pending Deletion Requests ({pendingDeletionRequests.length})</h2>
+            <p className="mt-1 text-xs text-[#6f4a56]">Organizer delete requests that require admin approval.</p>
+          </div>
+
+          <div className="max-h-[320px] overflow-auto p-4">
+            {pendingDeletionRequests.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-[#e6cdd4] bg-[#fff9fb] px-4 py-6 text-sm text-[#7e5a66]">
+                No pending deletion requests.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingDeletionRequests.map((event) => (
+                  <article key={`delete-${event.id}`} className="rounded-xl border border-[#eed6dc] bg-[#fff9fb] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-display text-lg font-semibold text-[#5c2234]">{event.title}</h3>
+                        <p className="mt-1 text-xs text-[#7d5360]">Requested by: {event.createdBy || "-"} on {formatDate(event.deleteRequestedAt)}</p>
+                      </div>
+                      <span className="rounded-full bg-[#fdeef1] px-2.5 py-1 text-xs font-semibold text-[#9e2d4f]">
+                        Delete Request
+                      </span>
+                    </div>
+
+                    <div className="mt-3 rounded-lg border border-[#f0dbe1] bg-white p-3 text-sm text-[#5d3a45]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#8f3450]">Reason from organizer</p>
+                      <p className="mt-1">{event.deleteRequestReason || "-"}</p>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => approveDeleteEvent(event.id)}
+                        disabled={approvingDeleteEventId === event.id}
+                        className="rounded-xl border border-[#efc8cf] bg-white px-4 py-2.5 text-sm font-semibold text-[#a13a4a] transition hover:border-[#e3a6b0] disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {approvingDeleteEventId === event.id ? "Approving..." : "Approve Deletion"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="mt-6 overflow-hidden rounded-2xl border border-[#d6e4ef] bg-white">
           <div className="border-b border-[#e0ebf4] bg-[#f7fbff] px-4 py-3">
             <h2 className="font-display text-lg font-semibold text-[#132b3f]">Recent Event Registrations ({recentRegistrations.length})</h2>
@@ -448,6 +532,7 @@ function AdminPortalPage({ token, onLogout }) {
                   <th className="px-3 py-2 font-semibold">Email</th>
                   <th className="px-3 py-2 font-semibold">Phone</th>
                   <th className="px-3 py-2 font-semibold">Fee</th>
+                  <th className="px-3 py-2 font-semibold">Payment</th>
                   <th className="px-3 py-2 font-semibold">Date</th>
                   <th className="px-3 py-2 font-semibold">Organizer</th>
                 </tr>
@@ -455,7 +540,7 @@ function AdminPortalPage({ token, onLogout }) {
               <tbody>
                 {recentRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-3 py-6 text-center text-[#5a728a]">No registrations available yet.</td>
+                    <td colSpan="8" className="px-3 py-6 text-center text-[#5a728a]">No registrations available yet.</td>
                   </tr>
                 ) : (
                   recentRegistrations.map((registration) => (
@@ -465,6 +550,7 @@ function AdminPortalPage({ token, onLogout }) {
                       <td className="px-3 py-2">{registration.email}</td>
                       <td className="px-3 py-2">{registration.phone}</td>
                       <td className="px-3 py-2">{registration.pricingLabel || "Free Entry"}</td>
+                      <td className="px-3 py-2">{registration.paymentPath || "-"}</td>
                       <td className="px-3 py-2">{registration.date}</td>
                       <td className="px-3 py-2">{registration.organizerUsername || "-"}</td>
                     </tr>

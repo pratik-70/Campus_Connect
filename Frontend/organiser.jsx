@@ -23,6 +23,8 @@ function OrganizerDashboardPage() {
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [loadingRegistrationsFor, setLoadingRegistrationsFor] = useState(null);
   const [registrationsByEvent, setRegistrationsByEvent] = useState({});
+  const [deleteReasonsByEvent, setDeleteReasonsByEvent] = useState({});
+  const [requestingDeleteFor, setRequestingDeleteFor] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     eventType: "Workshop",
@@ -315,6 +317,49 @@ function OrganizerDashboardPage() {
     }
   }
 
+  async function requestDeleteEvent(eventId) {
+    const reason = String(deleteReasonsByEvent[eventId] || "").trim();
+    if (reason.length < 10) {
+      setMessage({ type: "error", text: "Please provide a proper delete reason (at least 10 characters)." });
+      return;
+    }
+
+    try {
+      setRequestingDeleteFor(eventId);
+      const response = await fetch(`${API_BASE}/organizer/events/${eventId}/delete-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage({ type: "error", text: data.message || "Could not submit delete request." });
+        return;
+      }
+
+      setMessage({ type: "success", text: data.message || "Deletion request sent for admin approval." });
+      setDeleteReasonsByEvent((prev) => ({ ...prev, [eventId]: "" }));
+
+      const reloadResponse = await fetch(`${API_BASE}/organizer/events`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const reloadData = await reloadResponse.json().catch(() => ({}));
+      if (Array.isArray(reloadData.events)) {
+        setEvents(reloadData.events);
+      }
+    } catch (_error) {
+      setMessage({ type: "error", text: "Network issue while submitting delete request." });
+    } finally {
+      setRequestingDeleteFor(null);
+    }
+  }
+
   const displayName = useMemo(() => {
     const first = (user.firstName || "").trim();
     const last = (user.lastName || "").trim();
@@ -586,6 +631,35 @@ function OrganizerDashboardPage() {
                       </button>
                     </div>
 
+                    <div className="mt-3 rounded-lg border border-[#f1d5dc] bg-[#fff7f9] p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#9e2d4f]">Request Event Deletion</p>
+                      <p className="mt-1 text-xs text-[#6d4a57]">Deletion requires admin approval. Add a clear reason below.</p>
+
+                      {event.deleteRequestedAt ? (
+                        <div className="mt-2 rounded-md border border-[#efd3da] bg-white p-2 text-xs text-[#7c3c4e]">
+                          <p className="font-semibold">Delete request already submitted.</p>
+                          <p className="mt-1">Reason: {event.deleteRequestReason || "-"}</p>
+                        </div>
+                      ) : (
+                        <>
+                          <textarea
+                            className="mt-2 min-h-[70px] w-full rounded-lg border border-[#e5c8cf] bg-white px-3 py-2 text-xs text-[#4c2f38] outline-none transition focus:border-[#cf6281] focus:ring-2 focus:ring-[#cf628130]"
+                            placeholder="Explain why this event should be deleted"
+                            value={deleteReasonsByEvent[event.id] || ""}
+                            onChange={(e) => setDeleteReasonsByEvent((prev) => ({ ...prev, [event.id]: e.target.value }))}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => requestDeleteEvent(event.id)}
+                            disabled={requestingDeleteFor === event.id}
+                            className="mt-2 rounded-lg border border-[#efc8cf] bg-white px-3 py-1.5 text-xs font-semibold text-[#a13a4a] transition hover:border-[#e3a6b0] disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {requestingDeleteFor === event.id ? "Submitting..." : "Send Delete Request"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
                     {expandedEventId === event.id && (
                       <div className="mt-3 rounded-lg border border-[#d8e6f2] bg-[#f7fbff] p-3">
                         {loadingRegistrationsFor === event.id ? (
@@ -601,6 +675,7 @@ function OrganizerDashboardPage() {
                                 <p>Phone: {registration.phone}</p>
                                 <p>Year: {registration.yearOrDesignation || "-"}</p>
                                 <p>Fee: {registration.pricingLabel || "Free Entry"}</p>
+                                <p>Payment: {registration.paymentPath || "-"}</p>
                               </div>
                             ))}
                           </div>
