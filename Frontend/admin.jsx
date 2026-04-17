@@ -10,6 +10,17 @@ function formatDate(timestamp) {
   return dt.toLocaleString();
 }
 
+function isPastEvent(eventDate) {
+  if (!eventDate) return false;
+
+  const parsed = new Date(`${eventDate}T23:59:59`);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return parsed < today;
+}
+
 function parseEditChanges(summary) {
   if (!summary) return [];
   try {
@@ -166,11 +177,14 @@ function AdminPortalPage({ token, onLogout }) {
   const [health, setHealth] = useState({ ok: false, service: "Unknown" });
   const [eventCount, setEventCount] = useState(0);
   const [registrationCount, setRegistrationCount] = useState(0);
+  const [approvedEvents, setApprovedEvents] = useState([]);
   const [pendingEvents, setPendingEvents] = useState([]);
   const [pendingDeletionRequests, setPendingDeletionRequests] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
   const [search, setSearch] = useState("");
   const [accountFilter, setAccountFilter] = useState("All");
+  const [eventsPanelOpen, setEventsPanelOpen] = useState(false);
+  const [eventViewFilter, setEventViewFilter] = useState("All");
   const [isBusy, setIsBusy] = useState(false);
   const [approvingEventId, setApprovingEventId] = useState(null);
   const [approvingDeleteEventId, setApprovingDeleteEventId] = useState(null);
@@ -182,7 +196,7 @@ function AdminPortalPage({ token, onLogout }) {
       setIsBusy(true);
       setError("");
 
-      const [healthRes, usersRes, eventsRes, pendingEventsRes, deletionRequestsRes, registrationsRes] = await Promise.all([
+      const [healthRes, usersRes, eventsRes, approvedEventsRes, pendingEventsRes, deletionRequestsRes, registrationsRes] = await Promise.all([
         fetch(`${API_BASE}/health`),
         fetch(`${API_BASE}/admin/users`, {
           headers: {
@@ -190,6 +204,11 @@ function AdminPortalPage({ token, onLogout }) {
           }
         }),
         fetch(`${API_BASE}/events`),
+        fetch(`${API_BASE}/admin/events?status=Approved`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        }),
         fetch(`${API_BASE}/admin/events?status=Pending`, {
           headers: {
             "Authorization": `Bearer ${token}`
@@ -212,6 +231,9 @@ function AdminPortalPage({ token, onLogout }) {
 
       const eventsData = await eventsRes.json().catch(() => ({ events: [] }));
       setEventCount(Array.isArray(eventsData.events) ? eventsData.events.length : 0);
+
+      const approvedEventsData = await approvedEventsRes.json().catch(() => ({ events: [] }));
+      setApprovedEvents(Array.isArray(approvedEventsData.events) ? approvedEventsData.events : []);
 
       const pendingData = await pendingEventsRes.json().catch(() => ({ events: [] }));
       setPendingEvents(Array.isArray(pendingData.events) ? pendingData.events : []);
@@ -244,6 +266,34 @@ function AdminPortalPage({ token, onLogout }) {
     fetchAdminData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const currentEvents = useMemo(() => approvedEvents.filter((event) => !isPastEvent(event.date)), [approvedEvents]);
+  const pastEvents = useMemo(() => approvedEvents.filter((event) => isPastEvent(event.date)), [approvedEvents]);
+  const allEventItems = useMemo(() => {
+    const approvedItems = approvedEvents.map((event) => ({ ...event, eventStatus: "Approved" }));
+    const pendingItems = pendingEvents.map((event) => ({ ...event, eventStatus: "Pending" }));
+    return [...pendingItems, ...approvedItems].sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0));
+  }, [approvedEvents, pendingEvents]);
+
+  const filteredAllEventItems = useMemo(() => {
+    if (eventViewFilter === "Pending") {
+      return allEventItems.filter((event) => event.eventStatus === "Pending");
+    }
+
+    if (eventViewFilter === "Approved") {
+      return allEventItems.filter((event) => event.eventStatus === "Approved");
+    }
+
+    if (eventViewFilter === "Current") {
+      return allEventItems.filter((event) => event.eventStatus === "Approved" && !isPastEvent(event.date));
+    }
+
+    if (eventViewFilter === "Past") {
+      return allEventItems.filter((event) => event.eventStatus === "Approved" && isPastEvent(event.date));
+    }
+
+    return allEventItems;
+  }, [allEventItems, eventViewFilter]);
 
   async function approveEvent(eventId) {
     try {
@@ -401,73 +451,95 @@ function AdminPortalPage({ token, onLogout }) {
           <StatCard label="Registrations" value={registrationCount} tone="slate" />
         </section>
 
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Approved Events" value={approvedEvents.length} tone="blue" />
+          <StatCard label="Current Events" value={currentEvents.length} tone="mint" />
+          <StatCard label="Past Events" value={pastEvents.length} tone="peach" />
+          <StatCard label="Pending Events" value={pendingEvents.length} tone="slate" />
+        </section>
+
         <section className="mt-6 overflow-hidden rounded-2xl border border-[#d6e4ef] bg-white">
-          <div className="border-b border-[#e0ebf4] bg-[#f7fbff] px-4 py-3">
-            <h2 className="font-display text-lg font-semibold text-[#132b3f]">Pending Event Approvals ({pendingEvents.length})</h2>
-            <p className="mt-1 text-xs text-[#52677f]">Review organizer submissions before they appear on the student dashboard.</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setEventsPanelOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between border-b border-[#e0ebf4] bg-[#f7fbff] px-4 py-3 text-left"
+          >
+            <div>
+              <h2 className="font-display text-lg font-semibold text-[#132b3f]">Events ({filteredAllEventItems.length})</h2>
+              <p className="mt-1 text-xs text-[#52677f]">Click to view all events, current events, past events, and pending events.</p>
+            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#32597f] shadow-sm">
+              {eventsPanelOpen ? "Hide" : "Show"}
+            </span>
+          </button>
 
-          <div className="max-h-[360px] overflow-auto p-4">
-            {pendingEvents.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-6 text-sm text-[#5f748a]">
-                No pending events right now.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {pendingEvents.map((event) => (
-                  <article key={event.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
-                    {(() => {
-                      const eventChanges = parseEditChanges(event.editChangeSummary);
-                      return (
-                        <>
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
-                        <p className="mt-1 text-sm text-[#5f748a]">{event.description}</p>
-                      </div>
-                      <span className="rounded-full bg-[#fff4e8] px-2.5 py-1 text-xs font-semibold text-[#91551f]">
-                        {event.eventType}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 grid gap-2 text-xs text-[#5f748a] sm:grid-cols-2 lg:grid-cols-4">
-                      <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
-                      <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
-                      <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
-                      <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
-                    </div>
-
-                    {eventChanges.length > 0 && (
-                      <div className="mt-3 rounded-lg border border-[#d7e5f1] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#315a8d]">Organizer requested changes</p>
-                        <div className="mt-2 space-y-1.5 text-xs text-[#4e637a]">
-                          {eventChanges.map((change, index) => (
-                            <p key={`${event.id}-change-${index}`}>
-                              <span className="font-semibold text-[#2c465f]">{change.field}:</span> {change.from || "-"} -> {change.to || "-"}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => approveEvent(event.id)}
-                        disabled={approvingEventId === event.id}
-                        className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
-                        {approvingEventId === event.id ? "Approving..." : "Approve Event"}
-                      </button>
-                    </div>
-                        </>
-                      );
-                    })()}
-                  </article>
+          {eventsPanelOpen && (
+            <div className="p-4">
+              <div className="mb-4 flex flex-wrap gap-2">
+                {[
+                  "All",
+                  "Pending",
+                  "Approved",
+                  "Current",
+                  "Past"
+                ].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setEventViewFilter(option)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      eventViewFilter === option
+                        ? "bg-[#0ea596] text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)]"
+                        : "bg-[#eef5fb] text-[#32597f] hover:bg-[#e4eff8]"
+                    }`}
+                  >
+                    {option}
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
+
+              <div className="max-h-[380px] overflow-auto">
+                {filteredAllEventItems.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-6 text-sm text-[#5f748a]">
+                    No events match the selected filter.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredAllEventItems.map((event) => (
+                      <article key={`all-${event.eventStatus}-${event.id}`} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
+                            <p className="mt-1 text-sm text-[#5f748a]">{event.description}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="rounded-full bg-[#eef5ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
+                              {event.eventType}
+                            </span>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${event.eventStatus === "Approved" ? "bg-[#e8f8f4] text-[#0a7e68]" : "bg-[#fff4e8] text-[#91551f]"}`}>
+                              {event.eventStatus}
+                            </span>
+                            {event.eventStatus === "Approved" && (
+                              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isPastEvent(event.date) ? "bg-[#fff4e8] text-[#91551f]" : "bg-[#e8f8f4] text-[#0a7e68]"}`}>
+                                {isPastEvent(event.date) ? "Past" : "Current"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid gap-2 text-xs text-[#5f748a] sm:grid-cols-2 lg:grid-cols-4">
+                          <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="mt-6 overflow-hidden rounded-2xl border border-[#eed6dc] bg-white">
@@ -510,6 +582,166 @@ function AdminPortalPage({ token, onLogout }) {
                         {approvingDeleteEventId === event.id ? "Approving..." : "Approve Deletion"}
                       </button>
                     </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-2xl border border-[#d6e4ef] bg-white">
+          <StatCard label="Approved Events" value={approvedEvents.length} tone="blue" />
+          <StatCard label="Current Events" value={currentEvents.length} tone="mint" />
+          <StatCard label="Past Events" value={pastEvents.length} tone="peach" />
+          <StatCard label="Pending Events" value={pendingEvents.length} tone="slate" />
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-2xl border border-[#d6e4ef] bg-white">
+          <button
+            type="button"
+            onClick={() => setEventsPanelOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between border-b border-[#e0ebf4] bg-[#f7fbff] px-4 py-3 text-left"
+          >
+            <div>
+              <h2 className="font-display text-lg font-semibold text-[#132b3f]">Events ({filteredAllEventItems.length})</h2>
+              <p className="mt-1 text-xs text-[#52677f]">Click to view all events, current events, past events, and pending events.</p>
+            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#32597f] shadow-sm">
+              {eventsPanelOpen ? "Hide" : "Show"}
+            </span>
+          </button>
+
+          {eventsPanelOpen && (
+            <div className="p-4">
+              <div className="mb-4 flex flex-wrap gap-2">
+                {[
+                  "All",
+                  "Pending",
+                  "Approved",
+                  "Current",
+                  "Past"
+                ].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setEventViewFilter(option)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      eventViewFilter === option
+                        ? "bg-[#0ea596] text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)]"
+                        : "bg-[#eef5fb] text-[#32597f] hover:bg-[#e4eff8]"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[380px] overflow-auto">
+                {filteredAllEventItems.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-6 text-sm text-[#5f748a]">
+                    No events match the selected filter.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredAllEventItems.map((event) => (
+                      <article key={`all-${event.eventStatus}-${event.id}`} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
+                            <p className="mt-1 text-sm text-[#5f748a]">{event.description}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="rounded-full bg-[#eef5ff] px-2.5 py-1 text-xs font-semibold text-[#315a8d]">
+                              {event.eventType}
+                            </span>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${event.eventStatus === "Approved" ? "bg-[#e8f8f4] text-[#0a7e68]" : "bg-[#fff4e8] text-[#91551f]"}`}>
+                              {event.eventStatus}
+                            </span>
+                            {event.eventStatus === "Approved" && (
+                              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isPastEvent(event.date) ? "bg-[#fff4e8] text-[#91551f]" : "bg-[#e8f8f4] text-[#0a7e68]"}`}>
+                                {isPastEvent(event.date) ? "Past" : "Current"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid gap-2 text-xs text-[#5f748a] sm:grid-cols-2 lg:grid-cols-4">
+                          <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
+                          <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 overflow-hidden rounded-2xl border border-[#d6e4ef] bg-white">
+          <div className="border-b border-[#e0ebf4] bg-[#f7fbff] px-4 py-3">
+            <h2 className="font-display text-lg font-semibold text-[#132b3f]">Pending Event Approvals ({pendingEvents.length})</h2>
+            <p className="mt-1 text-xs text-[#52677f]">Review organizer submissions before they appear on the student dashboard.</p>
+          </div>
+
+          <div className="max-h-[360px] overflow-auto p-4">
+            {pendingEvents.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-[#d5e2ef] bg-[#f8fbff] px-4 py-6 text-sm text-[#5f748a]">
+                No pending events right now.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingEvents.map((event) => (
+                  <article key={event.id} className="rounded-xl border border-[#dce8f3] bg-[#f9fcff] p-4">
+                    {(() => {
+                      const eventChanges = parseEditChanges(event.editChangeSummary);
+                      return (
+                        <>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-display text-lg font-semibold text-[#1a2a3d]">{event.title}</h3>
+                        <p className="mt-1 text-sm text-[#5f748a]">{event.description}</p>
+                      </div>
+                      <span className="rounded-full bg-[#fff4e8] px-2.5 py-1 text-xs font-semibold text-[#91551f]">
+                        {event.eventType}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid gap-2 text-xs text-[#5f748a] sm:grid-cols-2 lg:grid-cols-4">
+                      <p><span className="font-semibold text-[#3d536c]">Department:</span> {event.department}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Date:</span> {event.date}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Time:</span> {event.time}</p>
+                      <p><span className="font-semibold text-[#3d536c]">Location:</span> {event.location}</p>
+                    </div>
+
+                    {eventChanges.length > 0 && (
+                      <div className="mt-3 rounded-lg border border-[#d7e5f1] bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#315a8d]">Organizer requested changes</p>
+                        <div className="mt-2 space-y-1.5 text-xs text-[#4e637a]">
+                          {eventChanges.map((change, index) => (
+                            <p key={`${event.id}-change-${index}`}>
+                              <span className="font-semibold text-[#2c465f]">{change.field}:</span> {change.from || "-"} {'->'} {change.to || "-"}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => approveEvent(event.id)}
+                        disabled={approvingEventId === event.id}
+                        className="rounded-xl bg-[linear-gradient(135deg,#169f91,#36cfc0)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(22,159,145,0.2)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {approvingEventId === event.id ? "Approving..." : "Approve Event"}
+                      </button>
+                    </div>
+                        </>
+                      );
+                    })()}
                   </article>
                 ))}
               </div>
