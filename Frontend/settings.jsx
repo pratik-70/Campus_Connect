@@ -128,8 +128,8 @@ function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen px-4 py-8 md:px-8">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-[#d7e5f1] bg-white p-8 text-[#5a6f86] shadow-[0_18px_40px_rgba(30,53,79,0.08)]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f7fbff_0%,#eef6ff_36%,#e9f4ff_100%)] px-4 py-8 md:px-8">
+        <div className="mx-auto max-w-[1400px] rounded-3xl border border-[#d7e5f1] bg-white/85 p-8 text-[#5a6f86] shadow-[0_18px_40px_rgba(30,53,79,0.08)] backdrop-blur-sm">
           Loading settings...
         </div>
       </div>
@@ -137,14 +137,14 @@ function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-8 md:px-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <header className="animate-fadeUp rounded-3xl border border-[#d7e5f1] bg-white/90 p-6 shadow-[0_18px_40px_rgba(30,53,79,0.08)] backdrop-blur-sm md:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#f7fbff_0%,#eef6ff_36%,#e9f4ff_100%)] flex flex-col text-[#1f3149]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0))]" />
+      <header className="relative z-30 border-b border-[#d7e5f1] bg-white/80 backdrop-blur-md shadow-[0_10px_30px_rgba(30,53,79,0.06)]">
+        <div className="mx-auto max-w-[1400px] px-5 py-3 md:px-8 md:py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#149a8e]">Account Settings</p>
               <h1 className="mt-2 font-display text-3xl font-bold text-[#16263a] md:text-4xl">{displayName}</h1>
-              <p className="mt-2 text-sm text-[#5a6f86]">Manage dashboard behavior and privacy preferences.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -170,13 +170,27 @@ function SettingsPage() {
               </button>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <form onSubmit={saveSettings} className="animate-fadeUp rounded-3xl border border-[#d7e5f1] bg-white p-6 shadow-[0_18px_40px_rgba(30,53,79,0.08)] md:p-8">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+      <main className="relative z-0 mx-auto w-full max-w-[1400px] flex-1 px-5 py-8 md:px-8">
+        <section className="animate-fadeUp rounded-[2rem] border border-[#d7e5f1] bg-white/80 px-6 py-7 shadow-[0_18px_40px_rgba(30,53,79,0.08)] backdrop-blur-sm md:px-10 md:py-10">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#149a8e]">Personalize your experience</p>
+            <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-[#16263a] md:text-5xl">
+              Tune notifications and privacy.
+            </h2>
+            <p className="mt-3 text-sm text-[#5a6f86] md:text-base">
+              Keep the settings simple, readable, and aligned with the rest of the campus app.
+            </p>
+          </div>
+        </section>
+
+        <form onSubmit={saveSettings} className="mt-8 animate-fadeUp rounded-[2rem] border border-[#d7e5f1] bg-white/80 px-6 py-7 shadow-[0_18px_40px_rgba(30,53,79,0.08)] backdrop-blur-sm md:px-10 md:py-10">
+          <div className="space-y-4">
+            <label className="block rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4 md:p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="max-w-2xl">
                   <p className="text-sm font-semibold text-[#1a2a3d]">Email announcements</p>
                   <p className="mt-1 text-xs text-[#5a6f86]">Get updates for featured events and campus news.</p>
                 </div>
@@ -184,14 +198,14 @@ function SettingsPage() {
                   type="checkbox"
                   checked={settings.emailAnnouncements}
                   onChange={(e) => updateSetting("emailAnnouncements", e.target.checked)}
-                  className="h-5 w-5 accent-[#0e8f84]"
+                  className="h-5 w-5 shrink-0 accent-[#0e8f84]"
                 />
               </div>
             </label>
 
-            <label className="rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+            <label className="block rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4 md:p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="max-w-2xl">
                   <p className="text-sm font-semibold text-[#1a2a3d]">Event reminders</p>
                   <p className="mt-1 text-xs text-[#5a6f86]">See reminders before events you register for.</p>
                 </div>
@@ -199,12 +213,12 @@ function SettingsPage() {
                   type="checkbox"
                   checked={settings.eventReminders}
                   onChange={(e) => updateSetting("eventReminders", e.target.checked)}
-                  className="h-5 w-5 accent-[#0e8f84]"
+                  className="h-5 w-5 shrink-0 accent-[#0e8f84]"
                 />
               </div>
             </label>
 
-            <label className="rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4">
+            <label className="block rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4 md:p-5">
               <p className="text-sm font-semibold text-[#1a2a3d]">Profile visibility</p>
               <p className="mt-1 text-xs text-[#5a6f86]">Choose who can view your student profile details.</p>
               <select
@@ -218,7 +232,7 @@ function SettingsPage() {
               </select>
             </label>
 
-            <label className="rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4">
+            <label className="block rounded-2xl border border-[#dbe8f3] bg-[#f9fcff] p-4 md:p-5">
               <p className="text-sm font-semibold text-[#1a2a3d]">Default dashboard layout</p>
               <p className="mt-1 text-xs text-[#5a6f86]">Choose how events should appear by default.</p>
               <select
@@ -252,7 +266,7 @@ function SettingsPage() {
             <p className="mt-4 rounded-xl bg-[#ecf8f6] px-3 py-2 text-sm font-medium text-[#0f766e]">{saveMessage}</p>
           ) : null}
         </form>
-      </div>
+      </main>
     </div>
   );
 }
